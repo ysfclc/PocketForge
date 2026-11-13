@@ -13,14 +13,15 @@
 | iOS contract-only scaffold | Authored; intentionally gated | no Xcode build job |
 | Protected release signing | Not configured/verified | approved Environment run |
 | Physical Redmi device install | Not tested | Phase 1 device report |
+| Gradle dependency verification metadata | Deferred Phase 1 gate | committed verification-metadata.xml and strict CI mode |
 
 Never mark pending/not-tested as passed without command, run URL, revision and result.
 
 ## GitHub runner allocation observation — 2026-11-14
 
-The Git-native workflows were triggered on commit `df1c4591a7bc4a6ecfa6fb5c9728930adbf60b1f`. GitHub created both the pipeline and security jobs, but they completed in approximately two seconds with `runner_id: 0`, empty step lists and no job logs. No workflow step ran, so this does not establish a source, Rust or Gradle failure and does not count as a pass. A successful runner allocation and full run are still required.
+The Git-native workflows are correctly registered and triggered on main commits. The latest runs were created but each build job terminated before runner allocation (`runner_id: 0`, empty steps, no job logs). No source/build step ran, so this does not establish a Rust, Gradle or actionlint failure and does not count as a pass.
 
-- Pipeline: https://github.com/ysfclc/PocketForge/actions/runs/43527587860
-- Security: https://github.com/ysfclc/PocketForge/actions/runs/43527587819
+- Direct CI pipeline: https://github.com/ysfclc/PocketForge/actions/runs/43528184752
+- Supply-chain/actionlint checks: https://github.com/ysfclc/PocketForge/actions/runs/43528184670
 
-Earlier runner-allocation failures are historical only. Current acceptance is measured against the Git-native pipeline, not the removed ZIP-ingestion workflow.
+A successful runner allocation and full run are still required to produce the APK artifact and close Phase 0. The repository itself has passed a local-mirror static contract check and PyYAML parsing for all three workflows; actionlint remains pending because GitHub did not execute the job.
