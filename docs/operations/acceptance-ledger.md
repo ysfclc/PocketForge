@@ -4,22 +4,23 @@
 |---|---|---|
 | Product, architecture, security docs | Authored | repository review |
 | Seven agent roles and ten skills | Authored | `.agent/` inventory |
-| Rust three Android ABIs | Pending CI | cargo-ndk logs and three JNI library outputs |
-| Android debug APK | Pending CI | APK artifact, apksigner verification |
+| Git-native direct commit pipeline | Authored; YAML parsed locally | `.github/workflows/pipeline.yml` |
+| Action SHA pins and per-job permissions | Static verification passed in local mirror | `scripts/verify-foundation.py` |
+| Rust three Android ABIs | Pending GitHub runner | cargo-ndk logs and three JNI library outputs |
+| Android debug APK | Pending GitHub runner | APK artifact, apksigner verification |
+| actionlint and foundation verification | Pending GitHub runner | security workflow run |
+| SBOM and provenance attestation | Pending GitHub runner | artifact and attestation |
 | iOS contract-only scaffold | Authored; intentionally gated | no Xcode build job |
-| Actions SHA pins and per-job permissions | Static review required | workflow scan |
-| actionlint and foundation verification | Pending CI | security workflow run |
-| SBOM and provenance attestation | Pending CI | artifact and attestation |
 | Protected release signing | Not configured/verified | approved Environment run |
 | Physical Redmi device install | Not tested | Phase 1 device report |
 
 Never mark pending/not-tested as passed without command, run URL, revision and result.
 
-## Historical CI observation — 2026-11-13
+## GitHub runner allocation observation — 2026-11-14
 
-The initial Keystone workflows created Rust, Android and supply-chain runs, but jobs ended before runner allocation (runner ID 0; no steps). This was an infrastructure-level failure and did not prove or disprove the source build. The ZIP-ingestion workflow was subsequently removed. Current acceptance must be measured against the Git-native pipeline in `.github/workflows/pipeline.yml`, not those historical runs.
+The Git-native workflows were triggered on commit `df1c4591a7bc4a6ecfa6fb5c9728930adbf60b1f`. GitHub created both the pipeline and security jobs, but they completed in approximately two seconds with `runner_id: 0`, empty step lists and no job logs. No workflow step ran, so this does not establish a source, Rust or Gradle failure and does not count as a pass. A successful runner allocation and full run are still required.
 
-Historical runs:
-- Supply chain: https://github.com/ysfclc/PocketForge/actions/runs/43526175094
-- Rust: https://github.com/ysfclc/PocketForge/actions/runs/43526175087
-- Android: https://github.com/ysfclc/PocketForge/actions/runs/43526174937
+- Pipeline: https://github.com/ysfclc/PocketForge/actions/runs/43527587860
+- Security: https://github.com/ysfclc/PocketForge/actions/runs/43527587819
+
+Earlier runner-allocation failures are historical only. Current acceptance is measured against the Git-native pipeline, not the removed ZIP-ingestion workflow.
