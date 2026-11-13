@@ -19,10 +19,11 @@ From the repository root:
 
 ```bash
 ./scripts/verify-foundation.sh
-./scripts/build-android.sh debug
+./scripts/build-rust.sh
+(cd android && gradle --no-daemon assembleDebug)
 ```
 
-The Android build helper cross-compiles the Rust core for all configured Android ABIs, then assembles the debug APK. See [local development](docs/operations/local-development.md) for prerequisites and [release process](docs/operations/release-process.md) for protected signing.
+The second command builds the Rust JNI libraries for all configured Android ABIs; the third assembles the Android debug APK. The equivalent one-command helper is `./scripts/build-android.sh debug`. See [local development](docs/operations/local-development.md) for prerequisites and [release process](docs/operations/release-process.md) for protected signing.
 
 ## Architecture
 
