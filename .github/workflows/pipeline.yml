@@ -41,15 +41,18 @@ jobs:
           sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools" "ndk;27.2.12479018"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> "$GITHUB_ENV"
 
-      - name: Cache Rust and Gradle dependencies
+      - name: Install and cache Gradle 8.7
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+        with:
+          gradle-version: "8.7"
+
+      - name: Cache Rust dependencies
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: pocketforge-${{ runner.os }}-${{ hashFiles('core/Cargo.lock', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+           key: pocketforge-${{ runner.os }}-${{ hashFiles('core/Cargo.lock', 'android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             pocketforge-${{ runner.os }}-
 
@@ -67,7 +70,7 @@ jobs:
 
       - name: Assemble Android debug APK
         working-directory: android
-        run: ./gradlew --no-daemon --stacktrace assembleDebug
+        run: gradle --no-daemon --stacktrace assembleDebug
 
       - name: Verify APK signature and package metadata
         run: |
