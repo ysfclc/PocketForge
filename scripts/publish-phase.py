@@ -28,7 +28,7 @@ def main():
         run(['git','add','-A'],work)
         changed=subprocess.run(['git','diff','--cached','--quiet'],cwd=work).returncode!=0
     if changed:
-        run(['git','commit','-m',f'Ingest {project} phase {phase}','-m',f'Tree SHA-256: {tree_hash}\nSource ZIP: {os.getenv("SOURCE_ZIP_NAME","unknown")}\nWorkflow run: {os.getenv("GITHUB_RUN_ID","unknown")}'],work)
+        run(['git','commit','-m',f'Ingest {project} phase {phase}','-m',f'Tree SHA-256: {tree_hash}\nSource ZIP: {os.getenv("SOURCE_ZIP_NAME","unknown")}\nWorkflow run: {os.getenv("GITHUB_RUN_ID","unknown")}\nTimestamp UTC: {os.getenv("PROVENANCE_TIMESTAMP","not-recorded")}'],work)
         run(['git','push','origin',f'HEAD:refs/heads/{branch}'],work,env)
     commit=run(['git','rev-parse','HEAD'],work,capture=True).stdout.strip()
     diff=subprocess.run(['git','diff','--quiet',f'origin/{base}...HEAD'],cwd=work).returncode!=0
