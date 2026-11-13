@@ -28,15 +28,20 @@ jobs:
       tree_hash: ${{ steps.validate.outputs.tree_hash }}
       phase_tag: ${{ steps.validate.outputs.phase_tag }}
       source_zip: ${{ steps.validate.outputs.source_zip }}
+      timestamp_utc: ${{ steps.validate.outputs.timestamp_utc }}
       dry_run: ${{ steps.mode.outputs.dry_run }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - id: mode
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ZIP_INPUT: ${{ inputs.zip_path }}
+          DRY_RUN_INPUT: ${{ inputs.dry_run }}
         run: |
-          if [[ "${{ github.event_name }}" == workflow_dispatch ]]; then
-            ZIP_PATH="${{ inputs.zip_path }}"
-            DRY_RUN="${{ inputs.dry_run }}"
+          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            ZIP_PATH="$ZIP_INPUT"
+            DRY_RUN="$DRY_RUN_INPUT"
           else
             ZIP_PATH="$(git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" | grep '^incoming/.*\.zip$' | head -n1)"
             DRY_RUN=false
@@ -117,6 +122,7 @@ jobs:
           TREE_HASH: ${{ needs.ingest.outputs.tree_hash }}
           PHASE_TAG: ${{ needs.ingest.outputs.phase_tag }}
           SOURCE_ZIP_NAME: ${{ needs.ingest.outputs.source_zip }}
+          PROVENANCE_TIMESTAMP: ${{ needs.ingest.outputs.timestamp_utc }}
         run: python3 scripts/publish-phase.py staging
   build-rust:
     needs: [ingest, publish]
