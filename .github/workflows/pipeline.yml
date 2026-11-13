@@ -1,220 +1,105 @@
-name: Keystone phase pipeline
+name: PocketForge CI pipeline
+
 on:
+  pull_request:
+    paths:
+      - "core/**"
+      - "android/**"
+      - "scripts/build-rust.sh"
+      - "scripts/build-android.sh"
+      - ".github/workflows/**"
   push:
-    paths: ['incoming/*.zip']
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      zip_path:
-        description: Repository-relative ZIP path under incoming/
-        required: true
-        type: string
-      dry_run:
-        description: Validate only; do not publish
-        required: true
-        default: true
-        type: boolean
+
 permissions:
   contents: read
+
 concurrency:
-  group: keystone-${{ github.event.inputs.zip_path || github.ref }}
+  group: pocketforge-ci-${{ github.ref }}
   cancel-in-progress: false
+
 jobs:
-  ingest:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      project_name: ${{ steps.validate.outputs.project_name }}
-      tree_hash: ${{ steps.validate.outputs.tree_hash }}
-      phase_tag: ${{ steps.validate.outputs.phase_tag }}
-      source_zip: ${{ steps.validate.outputs.source_zip }}
-      timestamp_utc: ${{ steps.validate.outputs.timestamp_utc }}
-      dry_run: ${{ steps.mode.outputs.dry_run }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - id: mode
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          ZIP_INPUT: ${{ inputs.zip_path }}
-          DRY_RUN_INPUT: ${{ inputs.dry_run }}
-        run: |
-          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
-            ZIP_PATH="$ZIP_INPUT"
-            DRY_RUN="$DRY_RUN_INPUT"
-          else
-            ZIP_PATH="$(git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" | grep '^incoming/.*\.zip$' | head -n1)"
-            DRY_RUN=false
-          fi
-          [[ "$ZIP_PATH" == incoming/*.zip && "$ZIP_PATH" != *'..'* ]] || exit 1
-          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
-          echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
-      - id: validate
-        env:
-          ZIP_PATH: ${{ steps.mode.outputs.zip_path }}
-        run: python3 scripts/validate-phase-zip.py "$ZIP_PATH" "$RUNNER_TEMP/staging" "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: phase-staging-${{ steps.validate.outputs.tree_hash }}
-          path: ${{ runner.temp }}/staging
-          if-no-files-found: error
-          retention-days: 1
-  provision:
-    needs: ingest
-    if: needs.ingest.outputs.dry_run != 'true'
-    concurrency:
-      group: provision-${{ needs.ingest.outputs.project_name }}
-      cancel-in-progress: false
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      repository: ${{ steps.create.outputs.repository }}
-      default_branch: ${{ steps.create.outputs.default_branch }}
-    steps:
-      - id: create
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
-        env:
-          TARGET_NAME: ${{ needs.ingest.outputs.project_name }}
-        with:
-          github-token: ${{ secrets.REPO_CREATE_TOKEN }}
-          script: |
-            const owner=context.repo.owner, name=process.env.TARGET_NAME;
-            let repo;
-            try { repo=(await github.rest.repos.get({owner,repo:name})).data; }
-            catch(e) {
-              if(e.status!==404) throw e;
-              const result=context.payload.repository?.owner?.type==='Organization'
-                ? await github.rest.repos.createInOrg({org:owner,name,private:true,auto_init:true})
-                : await github.rest.repos.createForAuthenticatedUser({name,private:true,auto_init:true});
-              repo=result.data;
-            }
-            core.setOutput('repository',repo.full_name);
-            core.setOutput('default_branch',repo.default_branch);
-  publish:
-    needs: [ingest, provision]
-    if: needs.ingest.outputs.dry_run != 'true'
-    concurrency:
-      group: publish-${{ needs.ingest.outputs.project_name }}
-      cancel-in-progress: false
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: write
-    outputs:
-      target_commit: ${{ steps.publish.outputs.target_commit }}
-      target_repository: ${{ needs.provision.outputs.repository }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: phase-staging-${{ needs.ingest.outputs.tree_hash }}
-          path: staging
-      - id: publish
-        env:
-          GH_TOKEN: ${{ secrets.REPO_CREATE_TOKEN }}
-          TARGET_REPOSITORY: ${{ needs.provision.outputs.repository }}
-          TARGET_DEFAULT_BRANCH: ${{ needs.provision.outputs.default_branch }}
-          PROJECT_NAME: ${{ needs.ingest.outputs.project_name }}
-          TREE_HASH: ${{ needs.ingest.outputs.tree_hash }}
-          PHASE_TAG: ${{ needs.ingest.outputs.phase_tag }}
-          SOURCE_ZIP_NAME: ${{ needs.ingest.outputs.source_zip }}
-          PROVENANCE_TIMESTAMP: ${{ needs.ingest.outputs.timestamp_utc }}
-        run: python3 scripts/publish-phase.py staging
-  build-rust:
-    needs: [ingest, publish]
-    if: needs.ingest.outputs.dry_run != 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          repository: ${{ needs.publish.outputs.target_repository }}
-          ref: ${{ needs.publish.outputs.target_commit }}
-          token: ${{ secrets.REPO_CREATE_TOKEN }}
-          persist-credentials: false
-      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
-      - run: sdkmanager "ndk;27.2.12479018" && echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> "$GITHUB_ENV"
-      - if: hashFiles('core/Cargo.toml') != ''
-        run: ./scripts/build-rust.sh
-      - if: hashFiles('core/Cargo.toml') != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: rust-jni-${{ needs.ingest.outputs.tree_hash }}
-          path: android/app/src/main/jniLibs/**/*.so
-          if-no-files-found: error
-  build-android:
-    needs: [ingest, publish, build-rust]
-    if: needs.ingest.outputs.dry_run != 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          repository: ${{ needs.publish.outputs.target_repository }}
-          ref: ${{ needs.publish.outputs.target_commit }}
-          token: ${{ secrets.REPO_CREATE_TOKEN }}
-          persist-credentials: false
-      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
-      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-      - run: curl -fsSLo "$RUNNER_TEMP/gradle.zip" https://services.gradle.org/distributions/gradle-8.7-bin.zip && unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP" && echo "GRADLE_HOME=$RUNNER_TEMP/gradle-8.7" >> "$GITHUB_ENV" && echo "$RUNNER_TEMP/gradle-8.7/bin" >> "$GITHUB_PATH"
-      - if: hashFiles('core/Cargo.toml') != ''
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: rust-jni-${{ needs.ingest.outputs.tree_hash }}
-          path: android/app/src/main/jniLibs
-      - if: hashFiles('android/gradlew') != ''
-        working-directory: android
-        run: ./gradlew --no-daemon assembleDebug
-      - if: hashFiles('android/gradlew') != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: phase-debug-apk-${{ needs.ingest.outputs.tree_hash }}
-          path: android/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 30
-  attest:
-    needs: [ingest, publish, build-android]
-    if: needs.ingest.outputs.dry_run != 'true'
+  verify-and-build:
+    name: Verify Rust core and assemble Android APK
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Checkout this exact repository commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          repository: ${{ needs.publish.outputs.target_repository }}
-          ref: ${{ needs.publish.outputs.target_commit }}
-          token: ${{ secrets.REPO_CREATE_TOKEN }}
           persist-credentials: false
-      - uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75
+
+      - name: Install Java 17 for Android Gradle
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK and NDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+
+      - name: Install required Android platform and NDK packages
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools" "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Cache Rust and Gradle dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: pocketforge-${{ runner.os }}-${{ hashFiles('core/Cargo.lock', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            pocketforge-${{ runner.os }}-
+
+      - name: Verify repository foundation and contracts
+        run: ./scripts/verify-foundation.sh
+
+      - name: Compile Rust core for all supported Android ABIs
+        run: ./scripts/build-rust.sh
+
+      - name: Run Rust tests and lint checks
+        working-directory: core
+        run: |
+          cargo +1.82.0 test --workspace --locked
+          cargo +1.82.0 clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Assemble Android debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK signature and package metadata
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          apksigner verify --verbose "$APK"
+          aapt dump badging "$APK" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:"
+
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75
         with:
           path: .
           format: cyclonedx-json
           output-file: pocketforge.cdx.json
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+
+      - name: Attest APK build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
         with:
-          name: phase-debug-apk-${{ needs.ingest.outputs.tree_hash }}
-          path: artifacts
-      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+          subject-path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload debug APK and SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          subject-path: artifacts/*.apk
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: phase-sbom-${{ needs.ingest.outputs.tree_hash }}
-          path: pocketforge.cdx.json
+          name: pocketforge-debug-${{ github.sha }}
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            pocketforge.cdx.json
           if-no-files-found: error
+          retention-days: 30
