@@ -53,7 +53,8 @@ def main():
     match=re.search(r'-phase-(\d+)',archive.stem); phase=match.group(1) if match else '00'
     provenance={'source_zip':archive.name,'source_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'workflow_run_id':os.getenv('GITHUB_RUN_ID','local'),'timestamp_utc':datetime.now(timezone.utc).isoformat(),'phase_tag':phase,'normalized_tree_sha256':tree_hash}
     (staging/'phase-provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
+    timestamp=provenance['timestamp_utc']
     with output.open('a') as handle:
-        handle.write(f'project_name={project}\nphase_tag={phase}\nsource_zip={archive.name}\ntree_hash={tree_hash}\n')
+        handle.write(f'project_name={project}\nphase_tag={phase}\nsource_zip={archive.name}\ntree_hash={tree_hash}\ntimestamp_utc={timestamp}\n')
     print(f'ZIP ACCEPTED: {len(tree)} files; tree {tree_hash}')
 if __name__=='__main__': main()
