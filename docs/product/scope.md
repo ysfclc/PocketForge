@@ -1,6 +1,6 @@
 # Scope and non-goals
 
-Keystone foundation: product/architecture/data/FFI contracts; Rust workspace placeholder for three Android targets; native Android shell packaging Rust; iOS contract scaffold only; agent roster, skills, security and phase ingestion.
+Keystone foundation: product/architecture/data/FFI contracts; Rust workspace placeholder for three Android targets; native Android shell packaging Rust; iOS contract scaffold only; agent roster, skills, security and Git-native phase protocol.
 
 Later intended scope: Project workspace and Passport; durable missions; local/frontier provider adapters; GitHub and Memo connectors; local Android build/diagnostics/tests/install/signing/artifacts; optional sync and additional project types only with evidence.
 
@@ -14,5 +14,6 @@ Explicit non-goals:
 - No autonomous release signing or credentials in agent context.
 - No iOS build until separate runner/signing/parity approval.
 - No universal natural-language no-code builder in MVP.
+- No ZIP-based source ingestion, secondary repository provisioning or archive-driven phase delivery.
 
 Any change to a non-goal requires product decision and ADR plus architecture/security review.
