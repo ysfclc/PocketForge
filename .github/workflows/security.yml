@@ -1,0 +1,25 @@
+name: Supply chain security
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+      - run: $HOME/go/bin/actionlint -color
+      - run: ./scripts/verify-foundation.sh
+      - run: cargo install cargo-deny --locked && cargo install cargo-audit --locked
+      - working-directory: core
+        run: cargo deny check && cargo audit
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pull-requests: write}
+    steps:
+      - uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9
