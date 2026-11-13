@@ -1,13 +1,18 @@
-# Repository log — 2026-11-13
+# Repository log — 2026-11-14
 
-Keystone foundation authored: product/architecture/data/FFI contracts; 14 ADRs; seven agent roles; ten skills; security and operations docs; Rust/Android scaffolds; iOS contract-only scaffold; pinned CI workflows and hostile ZIP validation.
+## Keystone foundation
 
-Local static inventory, Python syntax, shell syntax, YAML parse, SHA pin scan and valid/traversal/symlink/secret ZIP fixtures passed. Rust, Gradle, Android SDK, actionlint, GitHub provisioning, release signing and device installation remain pending CI/account/device evidence.
+Created product, architecture, data-model and FFI contracts; 14 ADRs; seven agent roles; ten skills; security and operations documentation; Rust/Android scaffolds; iOS contract-only scaffold; and pinned GitHub Actions workflows.
 
-## GitHub publication checkpoint
+## Delivery model correction
 
-- Branch: keystone/foundation-2026-11-13
-- PR: https://github.com/ysfclc/PocketForge/pull/1
-- Latest CI-tested source revision: 0855b514105d1f5de7063447aa95dd80c5d125cb
-- GitHub created Rust, Android and security runs, but each job ended before a runner was allocated (runner_id 0; no steps). See docs/operations/acceptance-ledger.md.
-- PR remains open and unmerged pending successful CI and human review.
+The user confirmed that PocketForge is developed directly in `ysfclc/PocketForge`. ZIP handoff, ZIP ingestion, secondary repository provisioning and the `REPO_CREATE_TOKEN` setup were not wanted. The repository was corrected accordingly:
+
+- `.github/workflows/pipeline.yml` now builds the exact GitHub commit: foundation checks → Rust Android ABI cross-build/tests → Android debug APK → APK verification → CycloneDX SBOM → build provenance → Actions artifact.
+- `.github/workflows/android.yml` is now manual release-only and protected by the `android-release` Environment.
+- ZIP validator/publisher scripts, `incoming/`, archive manifest and ZIP-specific skill were removed/replaced.
+- README, SETUP, threat model, phase protocol, release process and acceptance ledger now describe Git-native delivery.
+
+## Verification status
+
+The foundation inventory script passed in the available local scaffold copy before the direct-delivery conversion. Rust, Android SDK/Gradle, actionlint and physical-device checks are not installed in this container and remain unverified here. GitHub Actions is the authoritative build environment. Historical runner-allocation failures are documented in the acceptance ledger; the new pipeline requires a fresh successful run before any build gate is marked passed.
