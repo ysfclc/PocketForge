@@ -52,7 +52,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-           key: pocketforge-${{ runner.os }}-${{ hashFiles('core/Cargo.lock', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          key: pocketforge-${{ runner.os }}-${{ hashFiles('core/Cargo.lock', 'android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             pocketforge-${{ runner.os }}-
 
