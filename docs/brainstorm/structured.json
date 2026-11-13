@@ -1,0 +1,38 @@
+{
+  "product": "PocketForge",
+  "thesis": "Local-first mobile development Nexus and production factory connecting local intelligence, frontier agents, GitHub/Memo capabilities and controlled Android execution.",
+  "confirmed_decisions": [
+    "Independent from Memo; Memo is external automation connector",
+    "GitHub and frontier-agent integration",
+    "Local + frontier intelligence",
+    "Local-first with optional cloud",
+    "Android APK first; iOS gated"
+  ],
+  "hypotheses": [
+    "AI-assisted builders unfamiliar with Android toolchains are initial segment",
+    "Durable missions and context are differentiators",
+    "On-device builds work for a useful subset"
+  ],
+  "constraints": {
+    "device": "Redmi Note 12 Pro 5G",
+    "soc": "Dimensity 1080",
+    "ram_gb": 8,
+    "android": "14",
+    "budget": "Limited"
+  },
+  "non_goals": [
+    "HTML/web UI",
+    "merge into Memo",
+    "mandatory cloud compilation",
+    "Android Studio clone",
+    "public marketplace MVP",
+    "iOS before approval"
+  ],
+  "unverified": [
+    "on-device Gradle performance",
+    "device matrix",
+    "willingness to pay",
+    "local model coding quality"
+  ],
+  "archive_status": "Distilled from available context, not verbatim"
+}

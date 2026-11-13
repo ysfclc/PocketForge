@@ -1,0 +1,14 @@
+sequenceDiagram
+  actor User
+  participant PF as PocketForge
+  participant Agent as Frontier agent
+  participant Git as Local Git workspace
+  participant Build as Local build engine
+  User->>PF: Create mission
+  PF->>Agent: Delegate bounded task
+  Agent-->>PF: Return patch
+  PF->>User: Present diff
+  User->>PF: Approve
+  PF->>Git: Apply to isolated branch
+  PF->>Build: Build and test
+  Build-->>PF: APK and evidence
