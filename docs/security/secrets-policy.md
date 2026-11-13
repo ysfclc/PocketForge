@@ -1,7 +1,7 @@
 # Secrets policy
 
-CI tokens live only in GitHub Actions secrets. Release signing values live only in protected Environment android-release. Local connector credentials use Android Keystore-backed encrypted storage.
+CI receives only the minimum GitHub token permissions declared by each workflow job. Release signing values live only in the protected GitHub Environment `android-release`. Local connector credentials will use Android Keystore-backed encrypted storage when that capability is implemented.
 
-Names: REPO_CREATE_TOKEN; ANDROID_KEYSTORE_BASE64; ANDROID_KEYSTORE_PASSWORD; ANDROID_KEY_ALIAS; ANDROID_KEY_PASSWORD.
+Names: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
 
-Pass secrets only to the step that needs them. Never echo, commit, cache, artifact or send to agents. Decode keystore to a restrictive temp file, use and delete in same job. Rotate immediately after suspected exposure and at least annually. Revoke obsolete tokens.
+Pass secrets only to the step that needs them. Never echo, commit, cache, artifact or send secrets to agents. Decode the release keystore to a restrictive temporary file, use it and delete it in the same job. Rotate immediately after suspected exposure and review rotation at least annually. Revoke obsolete tokens. There is no `REPO_CREATE_TOKEN` because PocketForge does not provision secondary repositories.
