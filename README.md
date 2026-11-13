@@ -19,11 +19,10 @@ From the repository root:
 
 ```bash
 ./scripts/verify-foundation.sh
-./scripts/build-rust.sh
 ./scripts/build-android.sh debug
 ```
 
-See [local development](docs/operations/local-development.md) for prerequisites and [release process](docs/operations/release-process.md) for protected signing.
+The Android build helper cross-compiles the Rust core for all configured Android ABIs, then assembles the debug APK. See [local development](docs/operations/local-development.md) for prerequisites and [release process](docs/operations/release-process.md) for protected signing.
 
 ## Architecture
 
