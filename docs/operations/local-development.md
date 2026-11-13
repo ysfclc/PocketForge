@@ -17,10 +17,11 @@ From repository root:
 
 ```bash
 ./scripts/verify-foundation.sh
-./scripts/build-android.sh debug
+./scripts/build-rust.sh
+(cd android && gradle --no-daemon assembleDebug)
 ```
 
-The Android helper cross-compiles the Rust FFI library for all supported Android ABIs, then assembles the debug APK. To compile only the Rust libraries, run `./scripts/build-rust.sh`.
+The second command cross-compiles the Rust FFI library for all supported Android ABIs. The third assembles the debug APK. The equivalent one-command helper is `./scripts/build-android.sh debug`.
 
 CI builds the exact GitHub commit, compiles the Rust FFI library for all supported Android ABIs, runs Rust tests/lints, assembles and verifies the debug APK, then uploads the APK and SBOM with build provenance.
 
