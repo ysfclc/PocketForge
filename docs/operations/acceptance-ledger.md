@@ -20,10 +20,14 @@ Never mark pending/not-tested as passed without command, run URL, revision and r
 
 ## GitHub runner allocation observation — 2026-11-14
 
-The Git-native workflows are correctly registered and triggered on main commits. The latest runs were created but each build job terminated before runner allocation (`runner_id: 0`, empty steps, no runner name or group). No source/build step ran, so this does not establish a Kotlin, Rust, Gradle or actionlint failure and does not count as a pass.
+The Git-native workflows are registered and triggered on main commits. However, all build jobs tested so far terminate before runner allocation: `runner_id: 0`, empty runner name, zero steps and no logs. Downloading the job logs returns GitHub's `BlobNotFound`, confirming that no runner log stream was created. No source/build step ran, so this does not establish a Kotlin, Rust, Gradle or actionlint failure.
 
-- Direct CI pipeline for workspace commit `c57dc23`: https://github.com/ysfclc/PocketForge/actions/runs/43651244224
-- Corrected-source CI pipeline for `7e181f4`: https://github.com/ysfclc/PocketForge/actions/runs/43651482791
-- Corrected-source security checks for `7e181f4`: https://github.com/ysfclc/PocketForge/actions/runs/43651482862
+Both runner labels have now been tested:
+- `ubuntu-latest`: earlier runs fail before runner assignment.
+- `ubuntu-24.04`: the explicit-label diagnostic also fails before runner assignment.
 
-The latest pipeline run has zero artifacts. A successful runner allocation and full run are still required to produce the APK artifact and close Phase 0. The repository previously passed a local-mirror static contract check and PyYAML parsing for all three workflows; actionlint remains pending because GitHub did not execute the job.
+Latest explicit-label runs:
+- Direct CI pipeline: https://github.com/ysfclc/PocketForge/actions/runs/43651673973
+- Supply-chain/actionlint checks: https://github.com/ysfclc/PocketForge/actions/runs/43651673846
+
+The latest pipeline run has zero artifacts. The repository-side workflow configuration has been narrowed as a cause; the remaining checks are GitHub account/repository Actions policy, hosted-runner entitlement/usage, or GitHub-side runner provisioning. Those account-level settings are not exposed by the connected repository API. A successful runner allocation and full run are still required to produce the APK and close Phase 0.
