@@ -42,8 +42,8 @@ class MainActivity : Activity() {
         window.decorView.systemUiVisibility = 0
         nativeStatus = runCatching {
             System.loadLibrary("pocketforge_ffi")
-            "Native bridge responding · ABI \${nativeAbiVersion()} · health \${nativeHealthCheck()}"
-        }.getOrElse { "Native bridge unavailable · \${it.javaClass.simpleName}" }
+            "Native bridge responding · ABI ${nativeAbiVersion()} · health ${nativeHealthCheck()}"
+        }.getOrElse { "Native bridge unavailable · ${it.javaClass.simpleName}" }
         render()
     }
 
@@ -220,7 +220,7 @@ class MainActivity : Activity() {
         })
         page.addView(space(18))
         val missions = store.missions()
-        page.addView(sectionTitle("YOUR QUEUE", "\${missions.size} saved mission\${if (missions.size == 1) "" else "s"}"))
+        page.addView(sectionTitle("YOUR QUEUE", "${missions.size} saved mission${if (missions.size == 1) "" else "s"}"))
         page.addView(space(10))
         if (missions.isEmpty()) {
             page.addView(emptyCard("The queue is clear", "Create your first mission. It will remain here when you close the app."))
@@ -340,7 +340,7 @@ class MainActivity : Activity() {
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Create") { _, _ ->
                 val project = store.addProject(name.text.toString(), description.text.toString())
-                Toast.makeText(this, "Passport created: \${project.name}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Passport created: ${project.name}", Toast.LENGTH_SHORT).show()
                 render()
             }
             .show()
@@ -423,7 +423,7 @@ class MainActivity : Activity() {
         val folder = if (project.folderUri == null) "No folder linked yet" else "A folder permission is saved on this device."
         AlertDialog.Builder(this)
             .setTitle(project.name)
-            .setMessage("PROJECT PASSPORT\\n\\n\${project.description.ifBlank { "No project brief added." }}\\n\\n$folder")
+            .setMessage("PROJECT PASSPORT\n\n${project.description.ifBlank { "No project brief added." }}\n\n$folder")
             .setPositiveButton("Close", null)
             .setNeutralButton("Create mission") { _, _ ->
                 activeTab = Tab.MISSIONS
@@ -437,7 +437,7 @@ class MainActivity : Activity() {
         val nextState = if (mission.state == "Ready") "Draft" else "Ready"
         AlertDialog.Builder(this)
             .setTitle(mission.title)
-            .setMessage("\${mission.brief.ifBlank { "No acceptance notes added." }}\\n\\nCurrent state: \${mission.state}\\n\\nReady means the brief is prepared for a future agent run. It does not start execution.")
+            .setMessage("${mission.brief.ifBlank { "No acceptance notes added." }}\n\nCurrent state: ${mission.state}\n\nReady means the brief is prepared for a future agent run. It does not start execution.")
             .setNegativeButton("Close", null)
             .setPositiveButton(if (mission.state == "Ready") "Return to draft" else "Mark ready") { _, _ ->
                 store.setMissionState(mission.id, nextState)
