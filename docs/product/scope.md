@@ -2,7 +2,9 @@
 
 Keystone foundation: product/architecture/data/FFI contracts; Rust workspace placeholder for three Android targets; native Android shell packaging Rust; iOS contract scaffold only; agent roster, skills, security and Git-native phase protocol.
 
-Later intended scope: Project workspace and Passport; durable missions; local/frontier provider adapters; GitHub and Memo connectors; local Android build/diagnostics/tests/install/signing/artifacts; optional sync and additional project types only with evidence.
+First Local Factory slice implemented in the Android shell: local project workspace; Project Passport creation; existing folder linking through Android's Storage Access Framework; locally persisted mission queue with Draft / Ready states; and a Factory status screen that does not claim unverified build steps.
+
+Remaining intended scope: editable/exportable Project Passports; safe project file access; local Android toolchain/build execution; diagnostics, tests, cancellation and recovery; local/frontier provider adapters; capability-scoped GitHub and Memo connectors; signing/artifacts; optional sync and additional project types only with evidence.
 
 Explicit non-goals:
 - No HTML, browser UI, web app or web control plane.

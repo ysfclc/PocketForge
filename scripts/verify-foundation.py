@@ -23,6 +23,21 @@ assert not Path("scripts/validate-phase-zip.py").exists()
 assert not Path("scripts/publish-phase.py").exists()
 assert not list(Path(".").rglob("*.html"))
 
+app = Path("android/app/src/main/java/com/pocketforge/app/MainActivity.kt").read_text()
+store = Path("android/app/src/main/java/com/pocketforge/app/WorkspaceStore.kt").read_text()
+for contract in (
+    "Tab.WORKSPACE", "Tab.MISSIONS", "Tab.FACTORY",
+    "ACTION_OPEN_DOCUMENT_TREE", "takePersistableUriPermission",
+    "showCreateProject", "showCreateMission", "nativeStatus",
+):
+    assert contract in app, f"Native workspace missing contract: {contract}"
+for contract in (
+    "SharedPreferences", "WorkspaceProject", "WorkspaceMission",
+    "KEY_PROJECTS", "KEY_MISSIONS", "setMissionState",
+):
+    assert contract in store, f"Local workspace store missing contract: {contract}"
+assert "No product features included." not in app
+
 pipeline = Path(".github/workflows/pipeline.yml").read_text()
 for contract in (
     "pull_request:", "push:", "branches: [main]", "workflow_dispatch:",
@@ -47,4 +62,4 @@ for path in workflow_paths:
         job_body = jobs_block[match.end():end]
         assert re.search(r"^    permissions:", job_body, re.M), f"Job lacks explicit permissions: {path}:{match.group(1)}"
 
-print("PocketForge direct-delivery foundation checks passed: 7 agents, 10 skills, ADRs, Git-native CI, SHA-pinned actions, per-job permissions, no ZIP ingestion or HTML.")
+print("PocketForge direct-delivery checks passed: foundation contracts, native workspace, local persistence, Git-native CI, SHA-pinned actions, per-job permissions, no ZIP ingestion or HTML.")

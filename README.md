@@ -6,12 +6,23 @@ PocketForge is a local-first, mobile-native development Nexus and production fac
 
 | Phase | Outcome | Acceptance evidence |
 |---|---|---|
-| 0 — Keystone | Product/architecture foundation, Rust ABI scaffold, Android placeholder APK, direct GitHub CI | Three Rust Android ABIs compile; debug APK builds, verifies and is downloadable from Actions |
-| 1 — Local factory | Project workspace, import, local toolchain and repeatable builds | Two real Android projects build and install on the target device |
-| 2 — Intelligence Nexus | Local/frontier providers, capability routing and durable missions | A delegated task produces traceable, reviewed changes |
+| 0 — Keystone | Product/architecture/security foundation, Rust ABI scaffold and Git-native CI | Three Rust Android ABIs compile; debug APK builds, verifies and is downloadable from Actions |
+| 1 — Local factory | Project workspace, folder import, Project Passports, missions and local build toolchain | Two real Android projects build and install on the target device; cancellation, recovery and no-data-loss behavior verified |
+| 2 — Intelligence Nexus | Local/frontier providers, capability routing and agent execution | A bounded mission produces traceable, reviewed changes |
 | 3 — Connectors | Direct GitHub integration and Memo automation adapter | Remote changes are reviewed and imported without manual file shuffling |
-| 4 — Production loop | Diagnostics, tests, signing and release artifacts | Agent-to-verified-APK workflow works end to end |
+| 4 — Production loop | Diagnostics, tests, signing and artifact vault | A reviewed agent change becomes a tested signed APK with verifiable provenance |
 | 5 — Expansion | Additional providers, project types and platform support | Expansion is evidence-backed; iOS separately approved |
+
+## Current implementation
+
+The first native product slice is in place in the Android shell:
+
+- A local workspace with project cards and Project Passport creation.
+- Existing project folders can be linked through Android's system document-tree picker; the persisted folder permission stays on-device.
+- Missions can be created, linked to a project, and kept in a local queue with Draft / Ready states.
+- The Factory screen reports the real build-gate status instead of pretending that a build or agent run happened.
+
+This is implementation status, not device acceptance. The Rust bridge remains a minimal ABI scaffold; agent execution, GitHub/Memo connectors and local project compilation are not implemented yet.
 
 ## Quickstart
 
@@ -63,6 +74,6 @@ There is no ZIP ingestion, phase-upload repository, HTML, browser UI or web appl
 
 PocketForge remains independent from Memo. Memo is an external browser/app automation provider; GitHub and frontier agents remain separate integrations.
 
-## Foundation status
+## Acceptance status
 
-This repository currently contains contracts, documentation and placeholder scaffolds. A successful CI run and a physical-device install are required before Phase 0 can be called accepted. Check [the acceptance ledger](docs/operations/acceptance-ledger.md) for evidence rather than assumptions.
+The workspace and mission slice is authored but awaits a successful APK build and physical install. The latest GitHub Actions jobs still terminate before runner allocation, so no APK artifact exists yet. Check [the acceptance ledger](docs/operations/acceptance-ledger.md) for evidence rather than assumptions.
