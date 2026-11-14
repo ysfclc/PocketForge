@@ -10,7 +10,7 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main'
     name: Build and sign approved Android release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: android-release
     permissions:
       contents: read
