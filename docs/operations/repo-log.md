@@ -28,7 +28,7 @@ Commit `c57dc23` replaces the placeholder text-only Android screen with a first 
 
 Commit `7e181f4` corrected Kotlin string interpolation and dialog newline escapes found during source review. The source is now checked for these accidental escape patterns by the repository contract verifier.
 
-Commit `66c1254` pins all GitHub-hosted jobs to `ubuntu-24.04` rather than the floating `ubuntu-latest` label as a runner-allocation diagnostic.
+Commit `66c1254` pins all GitHub-hosted jobs to `ubuntu-24.04` rather than the floating `ubuntu-latest` label as a runner-allocation diagnostic. Both labels produce the same pre-runner failure. The documentation-only follow-up commit `093a254` also retriggered both workflows and reproduced it (pipeline run 43651709151; security run 43651709132).
 
 This slice is authored, not yet build- or device-verified. No agent execution, project compilation, GitHub/Memo connector or real build artifact is claimed.
 

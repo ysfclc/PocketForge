@@ -26,8 +26,12 @@ Both runner labels have now been tested:
 - `ubuntu-latest`: earlier runs fail before runner assignment.
 - `ubuntu-24.04`: the explicit-label diagnostic also fails before runner assignment.
 
-Latest explicit-label runs:
+Explicit-label diagnostic runs for source commit `66c1254`:
 - Direct CI pipeline: https://github.com/ysfclc/PocketForge/actions/runs/43651673973
 - Supply-chain/actionlint checks: https://github.com/ysfclc/PocketForge/actions/runs/43651673846
+
+The subsequent documentation commit `093a254` triggered the same two workflows and reproduced the failure:
+- Direct CI pipeline: https://github.com/ysfclc/PocketForge/actions/runs/43651709151
+- Supply-chain/actionlint checks: https://github.com/ysfclc/PocketForge/actions/runs/43651709132
 
 The latest pipeline run has zero artifacts. The repository-side workflow configuration has been narrowed as a cause; the remaining checks are GitHub account/repository Actions policy, hosted-runner entitlement/usage, or GitHub-side runner provisioning. Those account-level settings are not exposed by the connected repository API. A successful runner allocation and full run are still required to produce the APK and close Phase 0.
