@@ -26,8 +26,10 @@ Commit `c57dc23` replaces the placeholder text-only Android screen with a first 
 - Factory screen reports the native bridge status and explicitly shows unverified build gates as pending.
 - `WorkspaceStore` persists project and mission records in app-private SharedPreferences. This is a starter local schema; it is not the final database or full Passport model.
 
+Commit `7e181f4` corrected Kotlin string interpolation and dialog newline escapes found during source review. The source is now checked for these accidental escape patterns by the repository contract verifier.
+
 This slice is authored, not yet build- or device-verified. No agent execution, project compilation, GitHub/Memo connector or real build artifact is claimed.
 
 ## Verification status
 
-A local mirror of the original foundation layout passed `scripts/verify-foundation.py`; PyYAML parsed all three workflow files; action SHA pins and explicit per-job permissions passed the static verifier. Rust, Android SDK/Gradle, actionlint and physical-device checks remain unverified. The latest pipeline run for `c57dc23` (43651244224) and security run (43651244177) each terminated in about two seconds with `runner_id: 0`, empty steps and no runner assignment. The pipeline produced zero artifacts. No build gate is marked passed until a runner executes the full pipeline.
+A local mirror of the original foundation layout passed `scripts/verify-foundation.py`; PyYAML parsed all three workflow files; action SHA pins and explicit per-job permissions passed the static verifier. Rust, Android SDK/Gradle, actionlint and physical-device checks remain unverified. The latest pipeline run for `7e181f4` (43651482791) and security run (43651482862) each terminated in about two seconds with `runner_id: 0`, empty steps and no runner assignment. The pipeline produced zero artifacts. No build gate is marked passed until a runner executes the full pipeline.

@@ -37,6 +37,8 @@ for contract in (
 ):
     assert contract in store, f"Local workspace store missing contract: {contract}"
 assert "No product features included." not in app
+assert r"\${" not in app, "Kotlin interpolation is accidentally escaped"
+assert r"\\n" not in app, "Kotlin dialog newlines are double-escaped"
 
 pipeline = Path(".github/workflows/pipeline.yml").read_text()
 for contract in (
