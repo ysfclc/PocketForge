@@ -97,6 +97,7 @@ android_build = Path("android/app/build.gradle.kts").read_text()
 preview_manifest_path = Path("android/app/src/debug/AndroidManifest.xml")
 assert 'applicationIdSuffix = ".preview"' in android_build, "Preview must install alongside the earlier debug package"
 assert "previewStoreFile" in android_build and 'signingConfigs.getByName("preview")' in android_build, "Preview needs configurable persistent signing"
+assert 'storeType = "PKCS12"' in android_build, "Preview keystore format must be explicit"
 assert preview_manifest_path.is_file() and "PocketForge Preview" in preview_manifest_path.read_text(), "Preview app label must be distinguishable"
 gitignore = Path(".gitignore").read_text()
 assert "*.p12" in gitignore and "*.jks" in gitignore, "Private signing keystores must be ignored"
