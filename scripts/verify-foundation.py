@@ -89,6 +89,10 @@ assert "publish = false" in ffi_manifest and "publish = false" in core_manifest,
 assert 'version = "0.1.0", path = "../pocketforge-core"' in ffi_manifest, "Internal path dependency must have an explicit version"
 assert "private = { ignore = true }" in deny_policy, "License checks must ignore only unpublished private workspace members"
 
+security_workflow = Path(".github/workflows/security.yml").read_text()
+assert "run: cargo audit\\n" in security_workflow, "Use cargo-audit's supported command syntax"
+assert "cargo audit --locked" not in security_workflow, "cargo-audit does not accept Cargo's --locked flag"
+
 manifest = Path("android/app/src/main/AndroidManifest.xml").read_text()
 assert "android.permission.INTERNET" in manifest, "GitHub API requires INTERNET permission"
 assert r"\${" not in app, "Kotlin interpolation is accidentally escaped"
