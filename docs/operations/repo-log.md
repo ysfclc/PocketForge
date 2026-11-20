@@ -61,3 +61,6 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Added a controlled single-file remote change path: create a working branch from the pinned commit, compare the current blob SHA to the reviewed base, show a line-based diff, require an explicit commit action, and require a separate explicit action to create a pull request. No merge action exists.
 - GitHub API mutations require a repository-scoped token; editing requires Contents read/write and PR creation additionally requires Pull requests read/write. Public repository browsing remains possible without a token.
 - Implementation is authored but not build/device verified. GitHub Actions still fails before runner allocation (runner_id 0, zero steps, no artifacts), so no APK or Kotlin compilation result is claimed.
+
+- Extended `scripts/verify-foundation.py` to require the native GitHub connect/browser/edit/PR flow, pinned revision model, stale-blob guard, strict UTF-8 handling, repository-scoped Android Keystore credential vault and INTERNET permission.
+- The latest CI pipeline run (44712072193) and security run (44712072151) still terminate before runner assignment (runner_id 0, zero steps, no artifacts). The new Kotlin source has not yet been compiled by CI.
