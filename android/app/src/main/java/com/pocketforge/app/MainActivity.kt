@@ -476,6 +476,23 @@ class MainActivity : Activity() {
         form.addView(space(9))
         form.addView(token)
         form.addView(space(8))
+        form.addView(actionText("Remove saved token for this repository", muted) {
+            val name = repository.text.toString().trim()
+            if (!Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").matches(name)) {
+                Toast.makeText(this, "Enter owner/repository first.", Toast.LENGTH_SHORT).show()
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle("Remove GitHub token?")
+                    .setMessage("The encrypted token for $name will be removed from this device.")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Remove") { _, _ ->
+                        GitHubTokenVault(this).clear(name)
+                        Toast.makeText(this, "Saved token removed.", Toast.LENGTH_SHORT).show()
+                    }
+                    .show()
+            }
+        })
+        form.addView(space(8))
         form.addView(label("Use a fine-grained GitHub token restricted to this repository with Contents: Read-only and Metadata: Read-only. Tokens are encrypted with Android Keystore and never saved in the project record.", 11f, muted))
         AlertDialog.Builder(this)
             .setTitle("Connect GitHub")
