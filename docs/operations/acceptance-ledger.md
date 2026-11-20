@@ -7,6 +7,8 @@
 | Git-native direct commit pipeline | Authored; YAML parsed locally | `.github/workflows/pipeline.yml` |
 | Action SHA pins and per-job permissions | Static verification passed in local mirror | `scripts/verify-foundation.py` |
 | Native workspace / Project Passport / mission queue | Authored in `c57dc23`; Kotlin string interpolation corrected in `7e181f4`; build and device verification pending | APK build, persistence/import checks and target-device report |
+| GitHub repository connection and read-only browser | Authored on the current feature branch: repository verification, default-branch directory/file reads, AES-GCM Android Keystore token vault; build and device verification pending | Android build; public/private repository connection; encrypted token persistence/restart; directory navigation and text preview on Redmi device |
+| GitHub branch/write/diff/PR capabilities | Not implemented | scoped token grants, branch creation, base-revision checks, reviewed diff, explicit commit/PR approval and resulting GitHub evidence |
 | Rust three Android ABIs | Pending GitHub runner | cargo-ndk logs and three JNI library outputs |
 | Android debug APK | Pending GitHub runner | APK artifact, apksigner verification |
 | actionlint and foundation verification | Pending GitHub runner | security workflow run |
