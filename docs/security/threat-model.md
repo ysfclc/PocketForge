@@ -12,7 +12,7 @@ Source and build scripts, project context, connector credentials, signing keys, 
 - **Compromised CI runner:** avoid persistent self-hosted runners for untrusted changes; minimize token scopes; attest build provenance; treat runner compromise as possible.
 - **Artifact substitution:** bind provenance to the exact workflow commit and APK subject; retain the SBOM and Actions artifact together.
 - **Malicious agent/connector:** capability grants, narrow resource scopes, explicit approvals for source mutation/push/signing, event audit and revocation.
-- **GitHub token theft:** request a fine-grained token restricted to the selected repository and read-only Contents/Metadata permissions for the current connector; encrypt token bytes with AES-GCM using a non-exportable Android Keystore key; never put tokens in project records, logs, mission briefs or URLs. Token replacement is explicit. The current adapter performs GET requests only; remote mutation is not exposed yet.
+- **GitHub token theft:** request a fine-grained token restricted to the selected repository and read-only Contents/Metadata permissions for the current connector; encrypt token bytes with AES-GCM using a non-exportable Android Keystore key; never put tokens in project records, logs, mission briefs or URLs. Token replacement is explicit. The adapter's first write path creates a branch from the pinned revision, rechecks the file blob SHA before writing, and separates commit approval from PR creation. The UI requests a repository-scoped token with Contents read/write for edits and Pull requests read/write for PRs. No merge operation is exposed.
 
 ## Delivery boundary
 
