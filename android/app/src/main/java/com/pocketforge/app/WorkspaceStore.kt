@@ -13,7 +13,8 @@ data class WorkspaceProject(
     val createdAt: Long,
     val sourceKind: String = SOURCE_LOCAL,
     val githubRepository: String? = null,
-    val githubDefaultBranch: String? = null
+    val githubDefaultBranch: String? = null,
+    val githubRevision: String? = null
 ) {
     companion object {
         const val SOURCE_LOCAL = "local"
@@ -48,7 +49,8 @@ class WorkspaceStore(context: Context) {
                         createdAt = item.optLong("createdAt"),
                         sourceKind = item.optString("sourceKind", WorkspaceProject.SOURCE_LOCAL),
                         githubRepository = item.optString("githubRepository").takeIf { it.isNotBlank() },
-                        githubDefaultBranch = item.optString("githubDefaultBranch").takeIf { it.isNotBlank() }
+                        githubDefaultBranch = item.optString("githubDefaultBranch").takeIf { it.isNotBlank() },
+                        githubRevision = item.optString("githubRevision").takeIf { it.isNotBlank() }
                     )
                 )
             }
@@ -96,7 +98,8 @@ class WorkspaceStore(context: Context) {
             val refreshed = existing.copy(
                 name = repository.name,
                 description = repository.description,
-                githubDefaultBranch = repository.defaultBranch
+                githubDefaultBranch = repository.defaultBranch,
+                githubRevision = repository.defaultBranchSha
             )
             replaceProject(refreshed)
             return refreshed
@@ -169,6 +172,7 @@ class WorkspaceStore(context: Context) {
         put("sourceKind", sourceKind)
         put("githubRepository", githubRepository ?: "")
         put("githubDefaultBranch", githubDefaultBranch ?: "")
+        put("githubRevision", githubRevision ?: "")
     }
 
     private fun WorkspaceMission.toJson() = JSONObject().apply {
