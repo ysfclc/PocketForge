@@ -41,6 +41,8 @@ This is implementation status, not device acceptance. The Android source for loc
 
 **Connect GitHub:** Tap **Connect GitHub repository** and paste either `https://github.com/owner/repository` or `owner/repository`. Public repositories do not need a token. For a private repository, provide a fine-grained token with Metadata read-only and Contents read-only permissions. Tap **Verify and connect**. A successful connection opens the project overview and displays its pinned commit; use **Browse files** to inspect the pinned source. A connection cannot proceed if PocketForge cannot pin an immutable commit.
 
+**Keeping the previous install safe:** the new development build is a separate **PocketForge Preview** app (`com.pocketforge.app.preview`), while the earlier test app remains `com.pocketforge.app.debug`. They can coexist; the old app and its saved records are not removed. App-private records and folder permissions are not shared between packages, so link the project folder again in Preview.
+
 ## Quickstart
 
 From the repository root:
@@ -99,4 +101,9 @@ PocketForge remains independent from Memo. Memo is an external browser/app autom
 
 ## Acceptance status
 
-The current PR-head source (`c0b829c`) has a successful Android CI build in [run #109](https://github.com/ysfclc/PocketForge/actions/runs/44793160312): all Rust Android ABIs, Rust tests, Clippy, Gradle assembly, APK signature verification, SBOM generation, build provenance and artifact upload passed. The static security job also passed `actionlint`, the foundation verifier, `cargo deny check` and `cargo audit`; the separate Dependency Review action is blocked because GitHub Dependency Graph is disabled for this repository. The user has launched the initial UI, but has not yet accepted the revised local-folder and GitHub flows on-device. Local compilation/building of imported projects, mission execution and agent integration remain unimplemented. See [the acceptance ledger](docs/operations/acceptance-ledger.md) for exact evidence.
+The source-level onboarding revision has a successful Android CI build in [run #109](https://github.com/ysfclc/PocketForge/actions/runs/44793160312), and the static security job passed `actionlint`, the foundation verifier, `cargo deny check` and `cargo audit`. The earlier CI artifact was signed with a runner-local debug key that differs from the first installed build, so it is not a safe in-place update. The new side-by-side Preview package uses a private persistent signing key; its trusted build is intentionally gated until the four repository Actions secrets in [the Preview signing guide](docs/operations/preview-signing.md) are configured. The separate Dependency Review action remains blocked because GitHub Dependency Graph is disabled. Physical-device acceptance of local-folder and GitHub flows remains pending. Local compilation/building of imported projects, mission execution and agent integration remain unimplemented. See [the acceptance ledger](docs/operations/acceptance-ledger.md) for exact evidence.
+
+
+## Preview signing setup
+
+To preserve the old install and allow repeatable in-place updates of PocketForge Preview, configure the private signing secrets once. Follow [the Preview signing guide](docs/operations/preview-signing.md). The keystore and passwords are never committed to this public repository.
