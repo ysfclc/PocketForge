@@ -574,16 +574,16 @@ class MainActivity : Activity() {
 
     private fun showProject(project: WorkspaceProject) {
         if (project.sourceKind == WorkspaceProject.SOURCE_GITHUB) {
-            val pinned = !project.githubRevision.isNullOrBlank()
-            AlertDialog.Builder(this)
+            val pinned = project.githubRevision?.let { Regex("^[a-fA-F0-9]{40}$").matches(it) } == true
+            val projectDialog = AlertDialog.Builder(this)
                 .setTitle(project.name)
                 .setMessage(
-                    "GITHUB REPOSITORY\\n\\n${project.githubRepository}\\nDefault branch: ${project.githubDefaultBranch ?: "unknown"}\\nPinned revision: ${project.githubRevision?.take(7) ?: "not pinned"}" +
-                        "\\n\\n${project.description.ifBlank { "No repository description." }}" +
+                    "GITHUB REPOSITORY\n\n${project.githubRepository}\nDefault branch: ${project.githubDefaultBranch ?: "unknown"}\nPinned revision: ${project.githubRevision?.take(7) ?: "not pinned"}" +
+                        "\n\n${project.description.ifBlank { "No repository description." }}" +
                         if (pinned) {
-                            "\\n\\nBrowse the pinned source, prepare a reviewed single-file change, and open a pull request. PocketForge never merges it automatically."
+                            "\n\nBrowse the pinned source, prepare a reviewed single-file change, and open a pull request. PocketForge never merges it automatically."
                         } else {
-                            "\\n\\nThis saved connection has no immutable commit revision. Reconnect it before browsing or creating a mission."
+                            "\n\nThis saved connection has no immutable commit revision. Reconnect it before browsing or creating a mission."
                         }
                 )
                 .setNegativeButton("Close", null)
@@ -591,11 +591,12 @@ class MainActivity : Activity() {
                     if (pinned) browseGitHubPath(project, "")
                     else showConnectGitHubRepository(project.githubRepository)
                 }
-                .setPositiveButton(if (pinned) "Create mission" else "Reconnect") { _, _ ->
-                    if (pinned) createMissionForProject(project)
-                    else showConnectGitHubRepository(project.githubRepository)
+            if (pinned) {
+                projectDialog.setPositiveButton("Create mission") { _, _ ->
+                    createMissionForProject(project)
                 }
-                .show()
+            }
+            projectDialog.show()
             return
         }
         if (project.folderUri != null) {
@@ -604,7 +605,7 @@ class MainActivity : Activity() {
         }
         AlertDialog.Builder(this)
             .setTitle(project.name)
-            .setMessage("PROJECT PASSPORT\\n\\n${project.description.ifBlank { "No project brief added." }}\\n\\nNo local folder is linked yet.")
+            .setMessage("PROJECT PASSPORT\n\n${project.description.ifBlank { "No project brief added." }}\n\nNo local folder is linked yet.")
             .setPositiveButton("Close", null)
             .setNeutralButton("Create mission") { _, _ -> createMissionForProject(project) }
             .show()
