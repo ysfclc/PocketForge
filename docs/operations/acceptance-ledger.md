@@ -19,7 +19,7 @@
 | iOS contract-only scaffold | Authored; intentionally gated | no Xcode build job |
 | Protected release signing | Not configured/verified | approved Environment run |
 | Physical device acceptance | Initial APK launch observed by user; revised onboarding not yet tested | On device: import a folder, inspect/browse/open; connect public GitHub URL, inspect pinned SHA and browse; separately test private token and reviewed write approval |
-| Persistent Preview signing and safe install migration | Private PKCS12 Preview signing key generated but not committed; four GitHub Actions secrets still need user configuration | Configure `POCKETFORGE_DEBUG_KEYSTORE_BASE64`, `POCKETFORGE_DEBUG_KEYSTORE_PASSWORD`, `POCKETFORGE_DEBUG_KEY_ALIAS`, `POCKETFORGE_DEBUG_KEY_PASSWORD`, then dispatch a Preview build; package `com.pocketforge.app.preview` must install beside `com.pocketforge.app.debug` |
+| Persistent Preview signing and safe install migration | Private PKCS12 Preview signing key generated and validated; explicit PKCS12 Gradle configuration committed; four GitHub Actions secrets still need user configuration | Configure `POCKETFORGE_DEBUG_KEYSTORE_BASE64`, `POCKETFORGE_DEBUG_KEYSTORE_PASSWORD`, `POCKETFORGE_DEBUG_KEY_ALIAS`, `POCKETFORGE_DEBUG_KEY_PASSWORD`, then dispatch a Preview build; verify package `com.pocketforge.app.preview`, PKCS12 alias `pocketforge-preview`, and the persistent SHA-256 certificate fingerprint |
 | Gradle dependency verification metadata | Deferred Phase 1 gate | committed verification-metadata.xml and strict CI mode |
 
 Never mark pending/not-tested as passed without command, run URL, revision and result.
@@ -80,3 +80,6 @@ The new connector source and static contract checks were committed to the featur
 - To avoid telling the user to uninstall an app containing local project metadata, the development build is being moved to a separate `com.pocketforge.app.preview` package labelled **PocketForge Preview**. The old `com.pocketforge.app.debug` app stays installed. Preview has a fresh app-private store; re-link the original folder inside Preview (the source files themselves remain untouched).
 - A private PKCS12 Preview keystore has been generated outside the repository. It is not committed or uploaded as a public artifact. The trusted CI Preview build is gated on four repository Actions secrets, documented in [preview-signing.md](preview-signing.md).
 - Next gate: user configures those four secrets, then dispatches the PocketForge CI pipeline. The resulting stable Preview signer will be reused for future Preview updates. Release signing remains separate.
+
+
+- Preview certificate fingerprint validated from the private PKCS12 bundle with `keytool`: `9D:89:C5:B3:3B:9D:B7:56:B6:00:84:22:8B:B9:58:98:12:C7:1F:D5:F7:56:2E:30:A7:D4:AB:39:06:D0:6D:5F`. This is the expected signer for every trusted Preview build after the four repository secrets are configured.
