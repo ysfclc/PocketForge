@@ -72,14 +72,14 @@ object LocalProjectInspector {
             val idColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
             val nameColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
             val mimeColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
-            val sizeColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
+            val sizeColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE)
             while (cursor.moveToNext() && entries.size < MAX_DIRECTORY_ENTRIES) {
                 entries.add(
                     LocalProjectEntry(
                         documentId = cursor.getString(idColumn),
                         name = cursor.getString(nameColumn) ?: "Unnamed item",
                         mimeType = cursor.getString(mimeColumn) ?: "application/octet-stream",
-                        sizeBytes = if (cursor.isNull(sizeColumn)) null else cursor.getLong(sizeColumn)
+                        sizeBytes = if (sizeColumn < 0 || cursor.isNull(sizeColumn)) null else cursor.getLong(sizeColumn)
                     )
                 )
             }
