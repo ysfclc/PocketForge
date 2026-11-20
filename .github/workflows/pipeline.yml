@@ -59,10 +59,10 @@ jobs:
             pocketforge-${{ runner.os }}-
 
       - name: Verify repository foundation and contracts
-        run: ./scripts/verify-foundation.sh
+        run: bash ./scripts/verify-foundation.sh
 
       - name: Compile Rust core for all supported Android ABIs
-        run: ./scripts/build-rust.sh
+        run: bash ./scripts/build-rust.sh
 
       - name: Run Rust tests and lint checks
         working-directory: core
