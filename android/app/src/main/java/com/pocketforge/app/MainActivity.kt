@@ -95,11 +95,11 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), 0, 0, 0)
             addView(label("POCKETFORGE", 14f, ink, true))
-            addView(label("NEXUS  /  LOCAL FACTORY", 9f, muted, true))
+            addView(label("NEXUS  /  LOCAL + GITHUB", 9f, muted, true))
         }
         row.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
         val status = TextView(this).apply {
-            text = "●  LOCAL"
+            text = "●  NEXUS"
             textSize = 10f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(mint)
