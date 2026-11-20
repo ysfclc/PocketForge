@@ -29,9 +29,11 @@ The first native product slice is in place in the Android shell:
 - A local workspace with project cards and Project Passport creation.
 - Existing project folders can be linked through Android's system document-tree picker; the persisted folder permission stays on-device.
 - Missions can be created, linked to a project, and kept in a local queue with Draft / Ready states.
+- GitHub repositories can be connected by `owner/repository`, verified against the GitHub API, saved as project sources and browsed read-only (repository metadata, directories and text files).
+- Optional fine-grained GitHub tokens are encrypted with Android Keystore AES-GCM; only the encrypted payload is stored in app-private preferences.
 - The Factory screen reports the real build-gate status instead of pretending that a build or agent run happened.
 
-This is implementation status, not device acceptance. The Rust bridge remains a minimal ABI scaffold; agent execution, direct GitHub repository integration, the Memo adapter and local project compilation are not implemented yet.
+This is implementation status, not device acceptance. The Rust bridge remains a minimal ABI scaffold; agent execution, GitHub branch/write/PR operations, the Memo adapter and local project compilation are not implemented yet. The new GitHub connector has not yet passed an Android build or device test.
 
 ## Quickstart
 
@@ -91,4 +93,4 @@ PocketForge remains independent from Memo. Memo is an external browser/app autom
 
 ## Acceptance status
 
-The workspace and mission slice is authored but awaits a successful APK build and physical install. The latest GitHub Actions jobs still terminate before runner allocation, so no APK artifact exists yet. Direct GitHub repository integration is a planned capability, not an implemented one. Check [the acceptance ledger](docs/operations/acceptance-ledger.md) for evidence rather than assumptions.
+The workspace and mission slice is authored but awaits a successful APK build and physical install. The latest GitHub Actions jobs still terminate before runner allocation, so no APK artifact exists yet. The first read-only GitHub repository connector is authored but awaits Android build/device verification. Branch creation, remote writes, diff review and PR creation remain unimplemented. Check [the acceptance ledger](docs/operations/acceptance-ledger.md) for evidence rather than assumptions.
