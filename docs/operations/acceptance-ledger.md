@@ -9,7 +9,7 @@
 | Native workspace / Project Passport / mission queue | Authored in `c57dc23`; Kotlin string interpolation corrected in `7e181f4`; build and device verification pending | APK build, persistence/import checks and target-device report |
 | GitHub repository connection and browser | Authored on the current feature branch: repository verification, pinned default-branch SHA, directory/text reads, per-repository AES-GCM Android Keystore token vault; build and device verification pending | Android build; public/private repository connection; encrypted token persistence/restart; pinned-revision directory navigation and text preview on Redmi device |
 | GitHub single-file branch/commit/PR flow | Authored in source: branch from pinned commit; blob-SHA stale-write check; diff preview; explicit commit and separate PR approval; no merge operation | Android build; private repo token permissions; branch SHA/base verification; stale-file rejection; commit and PR URLs; no mutation without approval |
-| GitHub branch/write/diff/PR capabilities | Not implemented | scoped token grants, branch creation, base-revision checks, reviewed diff, explicit commit/PR approval and resulting GitHub evidence |
+| Advanced GitHub operations (multi-file patches, history/checks, artifact retrieval, mission integration) | Not implemented | scoped token grants, branch creation, base-revision checks, reviewed diff, explicit commit/PR approval and resulting GitHub evidence |
 | Rust three Android ABIs | Pending GitHub runner | cargo-ndk logs and three JNI library outputs |
 | Android debug APK | Pending GitHub runner | APK artifact, apksigner verification |
 | actionlint and foundation verification | Pending GitHub runner | security workflow run |
