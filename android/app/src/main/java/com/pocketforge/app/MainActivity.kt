@@ -536,22 +536,158 @@ class MainActivity : Activity() {
         val repository = project.githubRepository ?: return
         val ref = project.githubRevision ?: project.githubDefaultBranch ?: "main"
         runGitHubRequest("Reading ${path.substringAfterLast('/')}…", {
-            GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).readTextFile(repository, path, ref)
+            GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).readTextFileWithSha(repository, path, ref)
         }) { result ->
-            val content = result as String
+            val file = result as GitHubTextFile
             val maxChars = 14_000
-            val preview = if (content.length > maxChars) content.take(maxChars) + "\n\n… preview truncated …" else content
+            val preview = if (file.content.length > maxChars) file.content.take(maxChars) + "\n\n… preview truncated …" else file.content
             AlertDialog.Builder(this)
                 .setTitle(path.substringAfterLast('/'))
                 .setMessage(preview.ifBlank { "(empty file)" })
-                .setPositiveButton("Close", null)
+                .setNegativeButton("Close", null)
                 .setNeutralButton("Open on GitHub") { _, _ ->
                     runCatching {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/$repository/blob/${encodePath(ref)}/${encodePath(path)}")))
                     }
                 }
+                .setPositiveButton("Prepare edit") { _, _ -> showGitHubEditForm(project, path, file) }
                 .show()
         }
+    }
+
+    private fun showGitHubEditForm(project: WorkspaceProject, path: String, original: GitHubTextFile) {
+        val repository = project.githubRepository ?: return
+        val form = formColumn()
+        val branch = editField("Working branch").apply {
+            setText("pocketforge/edit-${System.currentTimeMillis()}")
+        }
+        val message = editField("Commit message").apply {
+            setText("Update ${path.substringAfterLast('/')}")
+        }
+        val token = editField("Fine-grained token with Contents read/write").apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        val replacement = editField("Full replacement file content", multiline = true).apply {
+            minLines = 10
+            maxLines = 16
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            setHorizontallyScrolling(true)
+            setText(original.content)
+        }
+        form.addView(label("REVIEWED FILE CHANGE", 10f, accent, true))
+        form.addView(space(8))
+        form.addView(label(path, 12f, muted, true))
+        form.addView(space(8))
+        form.addView(branch)
+        form.addView(space(8))
+        form.addView(message)
+        form.addView(space(8))
+        form.addView(replacement, LinearLayout.LayoutParams(-1, dp(300)))
+        form.addView(space(8))
+        form.addView(token)
+        form.addView(space(6))
+        form.addView(label("This token needs Contents: Read and write. Pull request creation additionally needs Pull requests: Read and write. The file is written only to a new branch based on the pinned project revision; the base file SHA is checked again before commit.", 10f, muted))
+        AlertDialog.Builder(this)
+            .setTitle("Prepare GitHub change")
+            .setView(form)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Review change") { _, _ ->
+                val branchName = branch.text.toString().trim()
+                val commitMessage = message.text.toString().trim()
+                val newContent = replacement.text.toString()
+                val suppliedToken = token.text.toString().trim()
+                val credential = suppliedToken.takeIf { it.isNotBlank() } ?: GitHubTokenVault(this).read(repository)
+                if (credential.isNullOrBlank()) {
+                    AlertDialog.Builder(this).setTitle("GitHub write permission required")
+                        .setMessage("Enter a fine-grained token with Contents: Read and write for this repository.")
+                        .setPositiveButton("OK", null).show()
+                    return@setPositiveButton
+                }
+                val oldPreview = original.content.take(2200)
+                val newPreview = newContent.take(2200)
+                val review = "FILE: $path\nBASE: ${project.githubRevision ?: project.githubDefaultBranch}\n\nCURRENT CONTENT (preview)\n$oldPreview\n\nPROPOSED CONTENT (preview)\n$newPreview"
+                AlertDialog.Builder(this)
+                    .setTitle("Confirm remote commit")
+                    .setMessage(review)
+                    .setNegativeButton("Back", null)
+                    .setPositiveButton("Create branch & commit") { _, _ ->
+                        val baseSha = project.githubRevision
+                        if (baseSha.isNullOrBlank()) {
+                            Toast.makeText(this, "This repository has no pinned commit revision. Reconnect it before editing.", Toast.LENGTH_LONG).show()
+                            return@setPositiveButton
+                        }
+                        runGitHubRequest("Creating branch and committing reviewed file…", {
+                            val client = GitHubRepositoryClient(credential)
+                            client.createBranch(repository, branchName, baseSha)
+                            val commitSha = client.updateTextFile(
+                                repository = repository,
+                                path = path,
+                                branch = branchName,
+                                message = commitMessage.ifBlank { "Update $path" },
+                                content = newContent,
+                                expectedBlobSha = original.blobSha
+                            )
+                            if (suppliedToken.isNotBlank()) GitHubTokenVault(this).save(repository, suppliedToken)
+                            commitSha
+                        }) { result ->
+                            val commitSha = result as String
+                            AlertDialog.Builder(this)
+                                .setTitle("Commit created")
+                                .setMessage("Your reviewed change is on branch $branchName.\n\nCommit: $commitSha\n\nNothing has been merged. Creating a pull request is a separate action.")
+                                .setNegativeButton("Close", null)
+                                .setPositiveButton("Create pull request") { _, _ ->
+                                    createGitHubPullRequest(project, branchName, commitSha, path, credential)
+                                }
+                                .show()
+                        }
+                    }
+                    .show()
+            }
+            .show()
+    }
+
+    private fun createGitHubPullRequest(
+        project: WorkspaceProject,
+        branchName: String,
+        commitSha: String,
+        changedPath: String,
+        credential: String
+    ) {
+        val repository = project.githubRepository ?: return
+        val form = formColumn()
+        val title = editField("Pull request title").apply { setText("PocketForge: update ${changedPath.substringAfterLast('/')}") }
+        val body = editField("Pull request description", multiline = true).apply {
+            setText("Proposed change prepared in PocketForge.\n\nRepository: $repository\nBase revision: ${project.githubRevision}\nCommit: $commitSha\nChanged file: $changedPath\n\nPlease review the complete GitHub diff before merging.")
+        }
+        form.addView(title)
+        form.addView(space(8))
+        form.addView(body)
+        AlertDialog.Builder(this)
+            .setTitle("Open pull request")
+            .setView(form)
+            .setNegativeButton("Not now", null)
+            .setPositiveButton("Create pull request") { _, _ ->
+                runGitHubRequest("Opening pull request…", {
+                    GitHubRepositoryClient(credential).createPullRequest(
+                        repository = repository,
+                        title = title.text.toString().trim().ifBlank { "PocketForge change" },
+                        body = body.text.toString(),
+                        head = branchName,
+                        base = project.githubDefaultBranch ?: "main"
+                    )
+                }) { result ->
+                    val url = result as String
+                    AlertDialog.Builder(this)
+                        .setTitle("Pull request opened")
+                        .setMessage(url)
+                        .setPositiveButton("Open GitHub") { _, _ ->
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        }
+                        .setNegativeButton("Close", null)
+                        .show()
+                }
+            }
+            .show()
     }
 
     private fun runGitHubRequest(title: String, request: () -> Any, onSuccess: (Any) -> Unit) {
