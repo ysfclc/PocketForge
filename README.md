@@ -33,7 +33,7 @@ The first native product slice is in place in the Android shell:
 - Optional fine-grained GitHub tokens are encrypted with Android Keystore AES-GCM; only the encrypted payload is stored in app-private preferences.
 - The Factory screen reports the real build-gate status instead of pretending that a build or agent run happened.
 
-This is implementation status, not device acceptance. The Rust bridge remains a minimal ABI scaffold; agent execution, GitHub branch/write/PR operations, the Memo adapter and local project compilation are not implemented yet. The new GitHub connector has not yet passed an Android build or device test.
+This is implementation status, not device acceptance. The Rust bridge remains a minimal ABI scaffold; agent execution, the Memo adapter and local project compilation are not implemented yet. The GitHub adapter now includes a reviewed single-file branch/commit/PR path in source; build and device verification remain pending. The new GitHub connector has not yet passed an Android build or device test.
 
 ## Quickstart
 
@@ -93,4 +93,4 @@ PocketForge remains independent from Memo. Memo is an external browser/app autom
 
 ## Acceptance status
 
-The workspace and mission slice is authored but awaits a successful APK build and physical install. The latest GitHub Actions jobs still terminate before runner allocation, so no APK artifact exists yet. The first read-only GitHub repository connector is authored but awaits Android build/device verification. Branch creation, remote writes, diff review and PR creation remain unimplemented. Check [the acceptance ledger](docs/operations/acceptance-ledger.md) for evidence rather than assumptions.
+The workspace and mission slice is authored but awaits a successful APK build and physical install. The latest GitHub Actions jobs still terminate before runner allocation, so no APK artifact exists yet. The first read-only GitHub repository connector is authored but awaits Android build/device verification. A reviewed single-file branch/commit/PR flow is now authored, including pinned-base branch creation, blob-SHA stale-write checks, a line-based diff preview and separate PR approval. Build and device verification remain pending. Check [the acceptance ledger](docs/operations/acceptance-ledger.md) for evidence rather than assumptions.
