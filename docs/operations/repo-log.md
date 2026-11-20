@@ -63,4 +63,4 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Implementation is authored but not build/device verified. GitHub Actions still fails before runner allocation (runner_id 0, zero steps, no artifacts), so no APK or Kotlin compilation result is claimed.
 
 - Extended `scripts/verify-foundation.py` to require the native GitHub connect/browser/edit/PR flow, pinned revision model, stale-blob guard, strict UTF-8 handling, repository-scoped Android Keystore credential vault and INTERNET permission.
-- The latest CI pipeline run (44712072193) and security run (44712072151) still terminate before runner assignment (runner_id 0, zero steps, no artifacts). The new Kotlin source has not yet been compiled by CI.
+- The latest CI pipeline run (44712322777) and security run (44712322822) still terminate before runner assignment (runner_id 0, zero steps, no artifacts). The new Kotlin source has not yet been compiled by CI.
