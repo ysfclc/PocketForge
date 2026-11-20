@@ -10,8 +10,16 @@ data class WorkspaceProject(
     val name: String,
     val description: String,
     val folderUri: String?,
-    val createdAt: Long
-)
+    val createdAt: Long,
+    val sourceKind: String = SOURCE_LOCAL,
+    val githubRepository: String? = null,
+    val githubDefaultBranch: String? = null
+) {
+    companion object {
+        const val SOURCE_LOCAL = "local"
+        const val SOURCE_GITHUB = "github"
+    }
+}
 
 data class WorkspaceMission(
     val id: String,
@@ -37,7 +45,10 @@ class WorkspaceStore(context: Context) {
                         name = item.optString("name", "Untitled project"),
                         description = item.optString("description"),
                         folderUri = item.optString("folderUri").takeIf { it.isNotBlank() },
-                        createdAt = item.optLong("createdAt")
+                        createdAt = item.optLong("createdAt"),
+                        sourceKind = item.optString("sourceKind", WorkspaceProject.SOURCE_LOCAL),
+                        githubRepository = item.optString("githubRepository").takeIf { it.isNotBlank() },
+                        githubDefaultBranch = item.optString("githubDefaultBranch").takeIf { it.isNotBlank() }
                     )
                 )
             }
@@ -73,9 +84,34 @@ class WorkspaceStore(context: Context) {
             folderUri = folderUri,
             createdAt = System.currentTimeMillis()
         )
-        val array = readArray(KEY_PROJECTS)
-        array.put(project.toJson())
-        prefs.edit().putString(KEY_PROJECTS, array.toString()).apply()
+        persistProject(project)
+        return project
+    }
+
+    fun addGitHubProject(repository: GitHubRepository): WorkspaceProject {
+        projects().firstOrNull {
+            it.sourceKind == WorkspaceProject.SOURCE_GITHUB &&
+                it.githubRepository.equals(repository.fullName, ignoreCase = true)
+        }?.let { existing ->
+            val refreshed = existing.copy(
+                name = repository.name,
+                description = repository.description,
+                githubDefaultBranch = repository.defaultBranch
+            )
+            replaceProject(refreshed)
+            return refreshed
+        }
+        val project = WorkspaceProject(
+            id = UUID.randomUUID().toString(),
+            name = repository.name,
+            description = repository.description,
+            folderUri = null,
+            createdAt = System.currentTimeMillis(),
+            sourceKind = WorkspaceProject.SOURCE_GITHUB,
+            githubRepository = repository.fullName,
+            githubDefaultBranch = repository.defaultBranch
+        )
+        persistProject(project)
         return project
     }
 
@@ -103,6 +139,24 @@ class WorkspaceStore(context: Context) {
         prefs.edit().putString(KEY_MISSIONS, array.toString()).apply()
     }
 
+    private fun persistProject(project: WorkspaceProject) {
+        val array = readArray(KEY_PROJECTS)
+        array.put(project.toJson())
+        prefs.edit().putString(KEY_PROJECTS, array.toString()).apply()
+    }
+
+    private fun replaceProject(project: WorkspaceProject) {
+        val array = readArray(KEY_PROJECTS)
+        for (i in 0 until array.length()) {
+            val item = array.optJSONObject(i) ?: continue
+            if (item.optString("id") == project.id) {
+                array.put(i, project.toJson())
+                break
+            }
+        }
+        prefs.edit().putString(KEY_PROJECTS, array.toString()).apply()
+    }
+
     private fun readArray(key: String): JSONArray =
         runCatching { JSONArray(prefs.getString(key, "[]")) }.getOrElse { JSONArray() }
 
@@ -112,6 +166,9 @@ class WorkspaceStore(context: Context) {
         put("description", description)
         put("folderUri", folderUri ?: "")
         put("createdAt", createdAt)
+        put("sourceKind", sourceKind)
+        put("githubRepository", githubRepository ?: "")
+        put("githubDefaultBranch", githubDefaultBranch ?: "")
     }
 
     private fun WorkspaceMission.toJson() = JSONObject().apply {
