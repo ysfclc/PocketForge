@@ -6,17 +6,17 @@
 | Seven agent roles and ten skills | Authored | `.agent/` inventory |
 | Git-native direct commit pipeline | Authored; YAML parsed locally | `.github/workflows/pipeline.yml` |
 | Action SHA pins and per-job permissions | Static verification passed in local mirror | `scripts/verify-foundation.py` |
-| Native workspace / Project Passport / mission queue | Android build passed in CI run #87; initial UI launched by user; broader persistence and import acceptance remains pending | Run #87; follow-up folder-import inspection change awaits build/device verification |
-| GitHub repository connection and browser | Initial connector compiled in CI run #87; user reported first-pass connection difficulty. URL normalization and direct post-connect project handoff are now authored; latest UX revision awaits build/device verification | Run #87 for the prior source; next revision must verify pasted public URL, private token, pinned revision, directory navigation and text preview |
-| GitHub single-file branch/commit/PR flow | Prior implementation compiled in CI run #87; still not device-tested | Device evidence required for branch SHA/base verification, stale-file rejection, commit and PR URLs, and no mutation without approval |
+| Native workspace / Project Passport / mission queue | Current PR-head source builds in CI run #109; first UI launch observed by user; improved folder inspection is compiled but not yet device-accepted | Run #109, commit `c0b829c`; verify folder permission survives restart and browse/open behavior on target phone |
+| GitHub repository connection and browser | Current PR-head source builds in CI run #109; URL/owner-repo input, immediate project handoff and strict immutable commit pinning are compiled; not yet device-accepted | Run #109, commit `c0b829c`; verify public URL, private token, pinned SHA, directory navigation and text preview on device |
+| GitHub single-file branch/commit/PR flow | Source compiled in current PR-head CI run #109; still not device-tested | Device evidence required for branch SHA/base verification, stale-file rejection, commit and PR URLs, and no mutation without approval |
 | Advanced GitHub operations (multi-file patches, history/checks, artifact retrieval, mission integration) | Not implemented | scoped token grants, branch creation, base-revision checks, reviewed diff, explicit commit/PR approval and resulting GitHub evidence |
-| Rust three Android ABIs | Passed in CI run #87 | `cargo-ndk` built arm64-v8a, armeabi-v7a and x86_64 in run 44784314374 |
-| Android debug APK | Passed in CI run #87 | Artifact 14653222608; package `com.pocketforge.app.debug`, version `0.1.0-keystone`; APK v2 signature verified |
-| actionlint and foundation verification | Passed on commit `3d92e1d` in the security workflow's static job | `actionlint` and `scripts/verify-foundation.sh` steps succeeded in run 44784314265; Cargo scanner install and dependency review were separate, not yet green |
-| SBOM and provenance attestation | Passed in CI run #87 | SBOM artifact 14654355782; provenance attestation 70253439; APK SHA-256 `b2cead4187ac591c76e8d971a44576da4e9934ad24efde331bb37a7249fc79ac` |
+| Rust three Android ABIs | Passed in current CI run #109 | `cargo-ndk` built arm64-v8a, armeabi-v7a and x86_64 in run 44793160312 |
+| Android debug APK | Passed in current PR-head CI run #109 | Artifact 14657897652; package `com.pocketforge.app.debug`, version `0.1.0-keystone`, min API 26, target API 35; APK v2 signature verified |
+| actionlint and foundation verification | Passed on current PR head in security run #122 | `actionlint` and `scripts/verify-foundation.sh` succeeded in run 44793160820 |
+| SBOM and provenance attestation | Passed in current CI run #109 | SBOM artifact 14657571912; APK SHA-256 `fe90729305a10ee1e9c8bfdc3e4507bdccb8bc100ba6fc149cd18ee59da7846b`; provenance attestation emitted and uploaded by run 44793160312 |
 | iOS contract-only scaffold | Authored; intentionally gated | no Xcode build job |
 | Protected release signing | Not configured/verified | approved Environment run |
-| Physical device acceptance | Initial APK launch observed by user; detailed acceptance remains pending | Test GitHub connect/browse/write approvals, folder link/restart/browse, persistence, and target-device stability on the user's Android device |
+| Physical device acceptance | Initial APK launch observed by user; revised onboarding not yet tested | On device: import a folder, inspect/browse/open; connect public GitHub URL, inspect pinned SHA and browse; separately test private token and reviewed write approval |
 | Gradle dependency verification metadata | Deferred Phase 1 gate | committed verification-metadata.xml and strict CI mode |
 
 Never mark pending/not-tested as passed without command, run URL, revision and result.
@@ -56,3 +56,16 @@ The new connector source and static contract checks were committed to the featur
 - SBOM artifact ID 14654355782. Build provenance attestation: https://github.com/ysfclc/PocketForge/attestations/70253439.
 - This verifies PocketForge's own Android debug package. It does not verify local compilation of imported projects or mission/agent execution.
 - The user launched the initial APK and reported two usability defects: GitHub connection did not complete from the first UI attempt, and folder import produced no useful visible outcome. The next feature revision adds URL normalization, a connected-project handoff, persisted folder-permission validation, SAF folder inspection and browsing, and an accurate Factory status. That follow-up revision still requires CI and physical-device acceptance.
+
+
+## Verified first-use revision — 2026-11-20
+
+- Current PR head: `c0b829cff3500c54903c047cc8375bed323e3dcb`.
+- Successful Android pipeline #109: https://github.com/ysfclc/PocketForge/actions/runs/44793160312.
+- Rust cross-compilation for arm64-v8a, armeabi-v7a and x86_64 passed; Rust tests and Clippy passed; Android Gradle assembly and APK signature verification passed.
+- APK artifact ID 14657897652. Package `com.pocketforge.app.debug`, version `0.1.0-keystone`, min API 26, target API 35.
+- APK SHA-256: `fe90729305a10ee1e9c8bfdc3e4507bdccb8bc100ba6fc149cd18ee59da7846b`. This matches the SHA-256 in the GitHub build provenance attestation.
+- SBOM artifact ID 14657571912.
+- Security run #122: actionlint, the expanded foundation verifier, `cargo deny check` (advisories, bans, licenses and sources all OK) and `cargo audit` passed. The overall workflow still reports failure because the separate Dependency Review action says Dependency Graph is disabled for this repository. Enable it under GitHub repository Settings → Security → Code security and analysis → Dependency graph to clear that integration-level block.
+- This verifies PocketForge's own debug package and static/source security checks. It does not prove real-device behavior of folder/GitHub flows, local compilation of imported projects, or agent execution.
+- Physical device acceptance remains pending. The next acceptance pass must exercise local folder selection/permission persistence/inspection/browsing and public/private GitHub connect/pinned browsing on the target phone.
