@@ -501,7 +501,7 @@ class MainActivity : Activity() {
 
     private fun browseGitHubPath(project: WorkspaceProject, path: String) {
         val repository = project.githubRepository ?: return
-        val ref = project.githubDefaultBranch ?: "main"
+        val ref = project.githubRevision ?: project.githubDefaultBranch ?: "main"
         runGitHubRequest("Loading ${if (path.isBlank()) repository else path}…", {
             GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).listContents(repository, path, ref)
         }) { result ->
@@ -534,7 +534,7 @@ class MainActivity : Activity() {
 
     private fun showGitHubFile(project: WorkspaceProject, path: String) {
         val repository = project.githubRepository ?: return
-        val ref = project.githubDefaultBranch ?: "main"
+        val ref = project.githubRevision ?: project.githubDefaultBranch ?: "main"
         runGitHubRequest("Reading ${path.substringAfterLast('/')}…", {
             GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).readTextFile(repository, path, ref)
         }) { result ->
