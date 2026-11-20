@@ -64,3 +64,25 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 
 - Extended `scripts/verify-foundation.py` to require the native GitHub connect/browser/edit/PR flow, pinned revision model, stale-blob guard, strict UTF-8 handling, repository-scoped Android Keystore credential vault and INTERNET permission.
 - The latest CI pipeline run (44712322777) and security run (44712322822) still terminate before runner assignment (runner_id 0, zero steps, no artifacts). The new Kotlin source has not yet been compiled by CI.
+
+
+## 2026-11-20 — First successful hosted build
+
+- The repository was made public and GitHub Actions began assigning hosted runners. The first allocated run exposed an obsolete Android SDK setup request for the removed `tools` package; both debug and release workflows now request `platform-tools` explicitly.
+- CI scripts were committed as mode `100644` and therefore could not be invoked directly. The debug, release and security workflows now call the scripts with `bash`.
+- The first Kotlin build exposed two compile errors in `MainActivity.kt`: a shadowed `background` reference passed to `setBackgroundColor`, and an invalid `singleLine` property. Both were corrected.
+- Successful run #87: https://github.com/ysfclc/PocketForge/actions/runs/44784314374, source commit `3d92e1d2463dbd60101d9be2232a582c82e94dd0`.
+- Rust cross-compilation for arm64-v8a, armeabi-v7a and x86_64 passed; Rust tests and Clippy passed; Gradle assembled the Android debug APK; `apksigner` verified its v2 signature; SBOM and build provenance were emitted.
+- APK artifact ID 14653222608; SBOM artifact ID 14654355782; provenance attestation 70253439. APK SHA-256: `b2cead4187ac591c76e8d971a44576da4e9934ad24efde331bb37a7249fc79ac`.
+- This closes the Keystone hosted-build gate for PocketForge's own debug APK. It does not establish local compilation of imported projects, agent execution, release signing, or physical-device acceptance of the new GitHub feature.
+
+## 2026-11-20 — First-use onboarding audit and corrections
+
+- The user installed and launched the first APK, then reported that GitHub could not be connected and importing a project folder had no visible useful outcome.
+- Inspection found that GitHub connection only accepted `owner/repository` even though users may paste a normal GitHub URL; on success it only showed a short toast and re-rendered the workspace.
+- Local folder import only stored the SAF tree URI, showed a toast and re-rendered. It did not verify the persisted read permission, inspect the folder, identify project markers or provide a way to browse its contents.
+- Added `LocalProjectInspector.kt` to validate the persisted SAF read grant, inspect the selected folder, identify common project types, list entries and create document URIs scoped to the selected tree. Files remain in place; no upload/copy is performed.
+- Updated local onboarding to reject missing persisted permission, explain that files are not uploaded, inspect the folder after linking, show a project summary and allow scoped folder/file browsing. The overview explicitly states that the folder is not yet edited or built.
+- Added GitHub URL normalization for HTTPS, github.com, www.github.com, SSH-style `git@github.com:owner/repository.git`, and plain `owner/repository`. Successful connection now opens the connected project details so the user can continue directly to repository browsing or mission creation.
+- Updated the Factory screen to distinguish the verified PocketForge CI APK from local compilation of imported projects and agent execution, which remain unimplemented.
+- Extended the foundation verifier and updated README, product scope, roadmap and acceptance ledger. The onboarding revision has been authored directly on the existing draft PR branch; its own CI build and physical-device acceptance are still pending.
