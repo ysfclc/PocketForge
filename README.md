@@ -24,16 +24,22 @@ These are project-source modes, not separate products or separate AI workflows. 
 
 ## Current implementation
 
-The first native product slice is in place in the Android shell:
+The first native product slice is implemented in the Android shell:
 
 - A local workspace with project cards and Project Passport creation.
 - Existing project folders can be linked through Android's system document-tree picker; PocketForge verifies the persisted permission, scans the root, identifies common project markers and provides a scoped file browser. Files stay in their original folder; they are not copied or uploaded.
 - Missions can be created, linked to a local folder or GitHub repository, and kept in a local queue with Draft / Ready states.
-- GitHub repositories can be connected using either a pasted GitHub repository URL or `owner/repository`, verified against the GitHub API, saved as project sources and browsed at a pinned commit (repository metadata, directories and text files), with an initial reviewed single-file branch/commit/PR flow.
+- GitHub repositories can be connected using a pasted GitHub URL or `owner/repository`, verified against the GitHub API, and pinned to an immutable default-branch commit. Public repositories need no token; private repositories can use an encrypted fine-grained token. The initial reviewed single-file branch/commit/PR flow checks the pinned base and current blob SHA.
 - Optional fine-grained GitHub tokens are encrypted with Android Keystore AES-GCM; only the encrypted payload is stored in app-private preferences.
 - The Factory screen distinguishes PocketForge's own verified CI APK build from capabilities that are still missing for imported projects.
 
-This is implementation status, not device acceptance. The Rust bridge remains a minimal ABI scaffold; agent execution, the Memo adapter and local project compilation are not implemented yet. The GitHub adapter now includes a reviewed single-file branch/commit/PR path in source; build and device verification remain pending. The new GitHub connector has not yet passed an Android build or device test.
+This is implementation status, not device acceptance. The Android source for local-folder inspection and GitHub connection/browsing has passed the current CI APK build. The user has launched an earlier build, but the improved folder and GitHub flows still need hands-on acceptance on the target phone. The Rust bridge remains a minimal ABI scaffold; local compilation of imported projects, agent execution and the Memo adapter are not implemented yet.
+
+## First-use flows
+
+**Link a local project:** On the Workspace screen, tap **Import local project folder**, choose the project root in Android's folder picker and grant access. PocketForge then asks for a project name and offers **Link & inspect**. The next screen reports the folder, top-level entries and any recognized project type. Use **Browse files** to inspect subfolders and open files with Android's installed apps. The source remains in its original location; it is not copied or uploaded, and it is not built yet.
+
+**Connect GitHub:** Tap **Connect GitHub repository** and paste either `https://github.com/owner/repository` or `owner/repository`. Public repositories do not need a token. For a private repository, provide a fine-grained token with Metadata read-only and Contents read-only permissions. Tap **Verify and connect**. A successful connection opens the project overview and displays its pinned commit; use **Browse files** to inspect the pinned source. A connection cannot proceed if PocketForge cannot pin an immutable commit.
 
 ## Quickstart
 
@@ -93,4 +99,4 @@ PocketForge remains independent from Memo. Memo is an external browser/app autom
 
 ## Acceptance status
 
-The PocketForge Android debug APK has now been built and signature-verified by GitHub Actions (run #87, commit `3d92e1d`). Rust cross-compilation for all three Android ABIs, Rust tests, Clippy, Gradle assembly, APK verification, SBOM generation and build provenance attestation passed. The local-folder inspection and GitHub onboarding improvements are now being verified on the next revision. The user has installed and launched the initial UI; end-to-end use of GitHub connection, local folder inspection, remote write approvals and regression behavior on the target device remain acceptance gates. Local compilation/building of imported projects and agent execution are not implemented yet. Check [the acceptance ledger](docs/operations/acceptance-ledger.md) for evidence rather than assumptions.
+The current PR-head source (`c0b829c`) has a successful Android CI build in [run #109](https://github.com/ysfclc/PocketForge/actions/runs/44793160312): all Rust Android ABIs, Rust tests, Clippy, Gradle assembly, APK signature verification, SBOM generation, build provenance and artifact upload passed. The static security job also passed `actionlint`, the foundation verifier, `cargo deny check` and `cargo audit`; the separate Dependency Review action is blocked because GitHub Dependency Graph is disabled for this repository. The user has launched the initial UI, but has not yet accepted the revised local-folder and GitHub flows on-device. Local compilation/building of imported projects, mission execution and agent integration remain unimplemented. See [the acceptance ledger](docs/operations/acceptance-ledger.md) for exact evidence.
