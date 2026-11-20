@@ -90,7 +90,7 @@ assert 'version = "0.1.0", path = "../pocketforge-core"' in ffi_manifest, "Inter
 assert "private = { ignore = true }" in deny_policy, "License checks must ignore only unpublished private workspace members"
 
 security_workflow = Path(".github/workflows/security.yml").read_text()
-assert "run: cargo audit\\n" in security_workflow, "Use cargo-audit's supported command syntax"
+assert "run: cargo audit" in security_workflow, "Use cargo-audit's supported command syntax"
 assert "cargo audit --locked" not in security_workflow, "cargo-audit does not accept Cargo's --locked flag"
 
 manifest = Path("android/app/src/main/AndroidManifest.xml").read_text()
