@@ -603,9 +603,11 @@ class MainActivity : Activity() {
                         .setPositiveButton("OK", null).show()
                     return@setPositiveButton
                 }
-                val oldPreview = original.content.take(2200)
-                val newPreview = newContent.take(2200)
-                val review = "FILE: $path\nBASE: ${project.githubRevision ?: project.githubDefaultBranch}\n\nCURRENT CONTENT (preview)\n$oldPreview\n\nPROPOSED CONTENT (preview)\n$newPreview"
+                if (newContent == original.content) {
+                    Toast.makeText(this, "No changes to commit.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                val review = buildReviewDiff(original.content, newContent)
                 AlertDialog.Builder(this)
                     .setTitle("Confirm remote commit")
                     .setMessage(review)
@@ -688,6 +690,33 @@ class MainActivity : Activity() {
                 }
             }
             .show()
+    }
+
+    private fun buildReviewDiff(original: String, replacement: String): String {
+        val oldLines = original.lines()
+        val newLines = replacement.lines()
+        var prefix = 0
+        while (prefix < oldLines.size && prefix < newLines.size && oldLines[prefix] == newLines[prefix]) {
+            prefix++
+        }
+        var suffix = 0
+        while (
+            suffix < oldLines.size - prefix &&
+            suffix < newLines.size - prefix &&
+            oldLines[oldLines.lastIndex - suffix] == newLines[newLines.lastIndex - suffix]
+        ) {
+            suffix++
+        }
+        val oldChanged = oldLines.subList(prefix, oldLines.size - suffix)
+        val newChanged = newLines.subList(prefix, newLines.size - suffix)
+        val diff = buildList {
+            add("@@ -${prefix + 1},${oldChanged.size} +${prefix + 1},${newChanged.size} @@")
+            if (prefix > 0) add(" " + oldLines[prefix - 1])
+            oldChanged.forEach { add("-$it") }
+            newChanged.forEach { add("+$it") }
+            if (suffix > 0) add(" " + oldLines[oldLines.size - suffix])
+        }.joinToString("\n")
+        return if (diff.length > 12_000) diff.take(12_000) + "\n… diff preview truncated …" else diff
     }
 
     private fun runGitHubRequest(title: String, request: () -> Any, onSuccess: (Any) -> Unit) {
