@@ -44,7 +44,7 @@ jobs:
           gradle-version: "8.7"
 
       - name: Compile Rust libraries for Android
-        run: ./scripts/build-rust.sh
+        run: bash ./scripts/build-rust.sh
 
       - name: Materialize release keystore for this job only
         env:
