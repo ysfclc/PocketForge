@@ -124,7 +124,15 @@ class GitHubRepositoryClient(private val token: String? = null) {
     fun createBranch(repository: String, branchName: String, baseSha: String) {
         require(REPOSITORY_PATTERN.matches(repository)) { "Invalid repository name." }
         require(SHA_PATTERN.matches(baseSha)) { "A full commit SHA is required." }
-        require(BRANCH_PATTERN.matches(branchName) && !branchName.contains("..")) { "Invalid working branch name." }
+        require(
+            BRANCH_PATTERN.matches(branchName) &&
+                !branchName.contains("..") &&
+                !branchName.contains("//") &&
+                !branchName.startsWith("/") &&
+                !branchName.endsWith("/") &&
+                !branchName.endsWith(".") &&
+                !branchName.endsWith(".lock")
+        ) { "Invalid working branch name." }
         val payload = JSONObject()
             .put("ref", "refs/heads/$branchName")
             .put("sha", baseSha)
