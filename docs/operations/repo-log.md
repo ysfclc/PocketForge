@@ -43,3 +43,11 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - This is a documentation/architecture constraint update only. The current Rust core remains a foundation scaffold and no agent execution, capability gateway or build artifact is claimed as implemented.
 - The user-approved product boundary remains PocketForge as a specialized Android development factory, independent from Memo.
 - Draft review is open as [PR #2](https://github.com/ysfclc/PocketForge/pull/2); it is not merged.
+
+## 2026-11-20 — Direct GitHub mode confirmed as first-class
+
+- The user confirmed that PocketForge must support direct work against connected GitHub repositories as well as local Android project folders.
+- Local and GitHub targets share the same mission engine; they are project-source adapters, not separate AI workflows.
+- GitHub mode covers scoped repository inspection, branches, diffs, approved commits/PRs, checks and artifact retrieval. GitHub Actions is a separate optional remote execution capability.
+- Local compilation, signing and installation remain independent of GitHub accounts and hosted-runner availability.
+- Updated the vision, scope, roadmap, architecture, mission invariants and README. This is a documentation/contract update, not an implemented GitHub connector.
