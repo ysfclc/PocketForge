@@ -13,7 +13,7 @@ Add these four repository Actions secrets under **Settings → Secrets and varia
 - `POCKETFORGE_DEBUG_KEY_ALIAS`: the key alias.
 - `POCKETFORGE_DEBUG_KEY_PASSWORD`: the private key password.
 
-The supplied private bundle contains the generated keystore material and these values. Copy each value into the matching secret field. Keep the bundle private and delete extra copies after the secrets are configured.
+The private bundle supplied separately contains the generated keystore material and these values. Copy each value into the matching secret field. Keep one secure offline backup of the bundle; never commit it, add it to an issue, or paste it into chat or a pull request.
 
 After adding the secrets, run **Actions → PocketForge CI pipeline → Run workflow** on the feature branch. The pipeline materializes the keystore in the runner's temporary directory with restrictive permissions, passes credentials only to the Gradle signing step, and removes the keystore after APK assembly. The APK verification step prints the signing certificate SHA-256 fingerprint so it can be checked across builds.
 
