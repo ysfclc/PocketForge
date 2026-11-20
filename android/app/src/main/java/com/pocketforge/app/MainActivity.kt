@@ -574,12 +574,27 @@ class MainActivity : Activity() {
 
     private fun showProject(project: WorkspaceProject) {
         if (project.sourceKind == WorkspaceProject.SOURCE_GITHUB) {
+            val pinned = !project.githubRevision.isNullOrBlank()
             AlertDialog.Builder(this)
                 .setTitle(project.name)
-                .setMessage("GITHUB REPOSITORY\n\n${project.githubRepository}\nDefault branch: ${project.githubDefaultBranch ?: "unknown"}\nPinned revision: ${project.githubRevision?.take(7) ?: "unavailable"}\n\n${project.description.ifBlank { "No repository description." }}\n\nBrowse the pinned source, prepare a reviewed single-file change, and open a pull request. PocketForge never merges it automatically.")
+                .setMessage(
+                    "GITHUB REPOSITORY\\n\\n${project.githubRepository}\\nDefault branch: ${project.githubDefaultBranch ?: "unknown"}\\nPinned revision: ${project.githubRevision?.take(7) ?: "not pinned"}" +
+                        "\\n\\n${project.description.ifBlank { "No repository description." }}" +
+                        if (pinned) {
+                            "\\n\\nBrowse the pinned source, prepare a reviewed single-file change, and open a pull request. PocketForge never merges it automatically."
+                        } else {
+                            "\\n\\nThis saved connection has no immutable commit revision. Reconnect it before browsing or creating a mission."
+                        }
+                )
                 .setNegativeButton("Close", null)
-                .setNeutralButton("Browse files") { _, _ -> browseGitHubPath(project, "") }
-                .setPositiveButton("Create mission") { _, _ -> createMissionForProject(project) }
+                .setNeutralButton(if (pinned) "Browse files" else "Reconnect") { _, _ ->
+                    if (pinned) browseGitHubPath(project, "")
+                    else showConnectGitHubRepository(project.githubRepository)
+                }
+                .setPositiveButton(if (pinned) "Create mission" else "Reconnect") { _, _ ->
+                    if (pinned) createMissionForProject(project)
+                    else showConnectGitHubRepository(project.githubRepository)
+                }
                 .show()
             return
         }
@@ -589,7 +604,7 @@ class MainActivity : Activity() {
         }
         AlertDialog.Builder(this)
             .setTitle(project.name)
-            .setMessage("PROJECT PASSPORT\n\n${project.description.ifBlank { "No project brief added." }}\n\nNo local folder is linked yet.")
+            .setMessage("PROJECT PASSPORT\\n\\n${project.description.ifBlank { "No project brief added." }}\\n\\nNo local folder is linked yet.")
             .setPositiveButton("Close", null)
             .setNeutralButton("Create mission") { _, _ -> createMissionForProject(project) }
             .show()
@@ -638,9 +653,11 @@ class MainActivity : Activity() {
         return fullName.takeIf { Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").matches(it) }
     }
 
-    private fun showConnectGitHubRepository() {
+    private fun showConnectGitHubRepository(initialRepository: String? = null) {
         val form = formColumn()
-        val repository = editField("GitHub URL or owner/repository")
+        val repository = editField("GitHub URL or owner/repository").apply {
+            if (!initialRepository.isNullOrBlank()) setText(initialRepository)
+        }
         val token = editField("Fine-grained token (only for private repos)").apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
@@ -704,9 +721,25 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun pinnedRevisionOrReconnect(project: WorkspaceProject): String? {
+        val revision = project.githubRevision
+        if (revision != null && Regex("^[a-fA-F0-9]{40}$").matches(revision)) return revision
+        AlertDialog.Builder(this)
+            .setTitle("Repository needs reconnection")
+            .setMessage(
+                "PocketForge requires an immutable commit revision before it can browse or prepare changes. Reconnect ${project.githubRepository} to pin its current default-branch commit."
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Reconnect") { _, _ ->
+                showConnectGitHubRepository(project.githubRepository)
+            }
+            .show()
+        return null
+    }
+
     private fun browseGitHubPath(project: WorkspaceProject, path: String) {
         val repository = project.githubRepository ?: return
-        val ref = project.githubRevision ?: project.githubDefaultBranch ?: "main"
+        val ref = pinnedRevisionOrReconnect(project) ?: return
         runBackgroundTask("Loading ${if (path.isBlank()) repository else path}…", {
             GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).listContents(repository, path, ref)
         }) { result ->
@@ -739,7 +772,7 @@ class MainActivity : Activity() {
 
     private fun showGitHubFile(project: WorkspaceProject, path: String) {
         val repository = project.githubRepository ?: return
-        val ref = project.githubRevision ?: project.githubDefaultBranch ?: "main"
+        val ref = pinnedRevisionOrReconnect(project) ?: return
         runBackgroundTask("Reading ${path.substringAfterLast('/')}…", {
             GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).readTextFileWithSha(repository, path, ref)
         }) { result ->
