@@ -428,7 +428,7 @@ class MainActivity : Activity() {
         if (project.sourceKind == WorkspaceProject.SOURCE_GITHUB) {
             AlertDialog.Builder(this)
                 .setTitle(project.name)
-                .setMessage("GITHUB REPOSITORY\n\n${project.githubRepository}\nDefault branch: ${project.githubDefaultBranch ?: "unknown"}\n\n${project.description.ifBlank { "No repository description." }}\n\nRepository browsing is read-only in this first connector slice.")
+                .setMessage("GITHUB REPOSITORY\n\n${project.githubRepository}\nDefault branch: ${project.githubDefaultBranch ?: "unknown"}\nPinned revision: ${project.githubRevision?.take(7) ?: "unavailable"}\n\n${project.description.ifBlank { "No repository description." }}\n\nBrowse the pinned source, prepare a reviewed single-file change, and open a pull request. PocketForge never merges it automatically.")
                 .setNegativeButton("Close", null)
                 .setNeutralButton("Browse files") { _, _ -> browseGitHubPath(project, "") }
                 .setPositiveButton("Create mission") { _, _ -> createMissionForProject(project) }
