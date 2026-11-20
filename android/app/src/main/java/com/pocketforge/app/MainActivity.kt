@@ -941,7 +941,7 @@ class MainActivity : Activity() {
                 progress.dismiss()
                 result.onSuccess(onSuccess).onFailure {
                     AlertDialog.Builder(this)
-                        .setTitle("GitHub request failed")
+                        .setTitle("PocketForge request failed")
                         .setMessage(it.message ?: "Unexpected network error.")
                         .setPositiveButton("OK", null)
                         .show()
