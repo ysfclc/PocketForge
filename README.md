@@ -29,7 +29,7 @@ The first native product slice is in place in the Android shell:
 - A local workspace with project cards and Project Passport creation.
 - Existing project folders can be linked through Android's system document-tree picker; the persisted folder permission stays on-device.
 - Missions can be created, linked to a project, and kept in a local queue with Draft / Ready states.
-- GitHub repositories can be connected by `owner/repository`, verified against the GitHub API, saved as project sources and browsed read-only (repository metadata, directories and text files).
+- GitHub repositories can be connected by `owner/repository`, verified against the GitHub API, saved as project sources and browsed at a pinned commit (repository metadata, directories and text files), with an initial reviewed single-file branch/commit/PR flow.
 - Optional fine-grained GitHub tokens are encrypted with Android Keystore AES-GCM; only the encrypted payload is stored in app-private preferences.
 - The Factory screen reports the real build-gate status instead of pretending that a build or agent run happened.
 
