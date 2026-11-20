@@ -13,6 +13,7 @@ data class GitHubRepository(
     val description: String,
     val isPrivate: Boolean,
     val defaultBranch: String,
+    val defaultBranchSha: String?,
     val htmlUrl: String
 )
 
@@ -28,12 +29,18 @@ class GitHubRepositoryClient(private val token: String? = null) {
     fun getRepository(fullName: String): GitHubRepository {
         require(REPOSITORY_PATTERN.matches(fullName)) { "Use owner/repository format." }
         val json = request("/repos/$fullName") as JSONObject
+        val defaultBranch = json.optString("default_branch", "main")
+        val branchSha = runCatching {
+            val ref = request("/repos/$fullName/git/ref/heads/${encode(defaultBranch)}") as JSONObject
+            ref.getJSONObject("object").getString("sha")
+        }.getOrNull()
         return GitHubRepository(
             fullName = json.optString("full_name", fullName),
             name = json.optString("name", fullName.substringAfter('/')),
             description = json.optString("description"),
             isPrivate = json.optBoolean("private"),
-            defaultBranch = json.optString("default_branch", "main"),
+            defaultBranch = defaultBranch,
+            defaultBranchSha = branchSha,
             htmlUrl = json.optString("html_url", "https://github.com/$fullName")
         )
     }
