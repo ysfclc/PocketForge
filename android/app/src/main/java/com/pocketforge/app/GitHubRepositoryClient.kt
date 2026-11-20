@@ -45,7 +45,7 @@ class GitHubRepositoryClient(private val token: String? = null) {
             val detail = error.message?.takeIf { it.isNotBlank() }
             throw GitHubApiException(
                 "Repository metadata was found, but PocketForge could not pin the default branch '$defaultBranch' to a commit. Check repository access and try again." +
-                    (detail?.let { "\\n\\n$it" } ?: "")
+                    (detail?.let { "\n\n$it" } ?: "")
             )
         }
         return GitHubRepository(
