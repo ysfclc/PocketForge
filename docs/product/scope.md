@@ -11,7 +11,9 @@ Two first-class project modes are in scope and share the same mission engine:
 
 A mission is bound to a source identity and revision. Local and GitHub modes must not silently overwrite each other or assume that a folder URI is a Git checkout. Explicit clone/link/sync behavior and conflict handling are required when work crosses modes.
 
-Remaining intended scope: editable/exportable Project Passports; safe project file access; local Android toolchain/build execution; direct GitHub repository capabilities; diagnostics, tests, cancellation and recovery; local/frontier provider adapters; capability-scoped Memo automation adapter; signing/artifacts; optional GitHub Actions execution and sync; additional project types only with evidence.
+First GitHub slice authored in the Android shell: connect a repository by owner/name, verify repository metadata, browse directories and preview text files from its default branch; optionally authenticate with a fine-grained token encrypted by Android Keystore. This is read-only and awaits build/device verification.
+
+Remaining intended scope: editable/exportable Project Passports; safe project file access; local Android toolchain/build execution; GitHub branch creation, approved file changes, diff review, commits, pull requests, checks and artifact retrieval; diagnostics, tests, cancellation and recovery; local/frontier provider adapters; capability-scoped Memo automation adapter; signing/artifacts; optional GitHub Actions execution and sync; additional project types only with evidence.
 
 Explicit non-goals:
 - No HTML, browser UI, web app or web control plane.
