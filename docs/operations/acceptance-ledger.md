@@ -38,3 +38,8 @@ The subsequent documentation commit `093a254` triggered the same two workflows a
 - Supply-chain/actionlint checks: https://github.com/ysfclc/PocketForge/actions/runs/43651709132
 
 The latest pipeline run has zero artifacts. The repository-side workflow configuration has been narrowed as a cause; the remaining checks are GitHub account/repository Actions policy, hosted-runner entitlement/usage, or GitHub-side runner provisioning. Those account-level settings are not exposed by the connected repository API. A successful runner allocation and full run are still required to produce the APK and close Phase 0.
+
+
+## GitHub connector CI attempt — 2026-11-20
+
+The new connector source and static contract checks were committed to the feature branch. The latest pipeline run (44712072193) and security run (44712072151) still fail before runner allocation: runner_id 0, empty runner name, zero executed steps and no artifacts. These runs therefore do not compile or validate the new Kotlin implementation. Build and Redmi device acceptance remain pending.
