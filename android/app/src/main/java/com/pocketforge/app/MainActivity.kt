@@ -485,10 +485,10 @@ class MainActivity : Activity() {
                 val fullName = repository.text.toString().trim()
                 val suppliedToken = token.text.toString().trim()
                 val vault = GitHubTokenVault(this)
-                val effectiveToken = suppliedToken.takeIf { it.isNotBlank() } ?: vault.read()
+                val effectiveToken = suppliedToken.takeIf { it.isNotBlank() } ?: vault.read(fullName)
                 runGitHubRequest("Verifying repository…", {
                     val remote = GitHubRepositoryClient(effectiveToken).getRepository(fullName)
-                    if (suppliedToken.isNotBlank()) vault.save(suppliedToken)
+                    if (suppliedToken.isNotBlank()) vault.save(remote.fullName, suppliedToken)
                     store.addGitHubProject(remote)
                 }) { result ->
                     val project = result as WorkspaceProject
@@ -503,7 +503,7 @@ class MainActivity : Activity() {
         val repository = project.githubRepository ?: return
         val ref = project.githubDefaultBranch ?: "main"
         runGitHubRequest("Loading ${if (path.isBlank()) repository else path}…", {
-            GitHubRepositoryClient(GitHubTokenVault(this).read()).listContents(repository, path, ref)
+            GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).listContents(repository, path, ref)
         }) { result ->
             val entries = result as List<GitHubEntry>
             if (entries.isEmpty()) {
@@ -536,7 +536,7 @@ class MainActivity : Activity() {
         val repository = project.githubRepository ?: return
         val ref = project.githubDefaultBranch ?: "main"
         runGitHubRequest("Reading ${path.substringAfterLast('/')}…", {
-            GitHubRepositoryClient(GitHubTokenVault(this).read()).readTextFile(repository, path, ref)
+            GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).readTextFile(repository, path, ref)
         }) { result ->
             val content = result as String
             val maxChars = 14_000
