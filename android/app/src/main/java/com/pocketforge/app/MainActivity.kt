@@ -498,11 +498,11 @@ class MainActivity : Activity() {
             .setTitle("Connect GitHub")
             .setView(form)
             .setNegativeButton("Cancel", null)
-            .setPositiveButton("Verify and connect") { _, _ ->
+            .setPositiveButton("Verify and connect") connectClick@{ _, _ ->
                 val fullName = repository.text.toString().trim()
                 if (!Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").matches(fullName)) {
                     Toast.makeText(this, "Enter a repository as owner/repository.", Toast.LENGTH_LONG).show()
-                    return@setPositiveButton
+                    return@connectClick
                 }
                 val suppliedToken = token.text.toString().trim()
                 val vault = GitHubTokenVault(this)
@@ -612,7 +612,7 @@ class MainActivity : Activity() {
             .setTitle("Prepare GitHub change")
             .setView(form)
             .setNegativeButton("Cancel", null)
-            .setPositiveButton("Review change") { _, _ ->
+            .setPositiveButton("Review change") reviewClick@{ _, _ ->
                 val branchName = branch.text.toString().trim()
                 val commitMessage = message.text.toString().trim()
                 val newContent = replacement.text.toString()
@@ -622,22 +622,22 @@ class MainActivity : Activity() {
                     AlertDialog.Builder(this).setTitle("GitHub write permission required")
                         .setMessage("Enter a fine-grained token with Contents: Read and write for this repository.")
                         .setPositiveButton("OK", null).show()
-                    return@setPositiveButton
+                    return@reviewClick
                 }
                 if (newContent == original.content) {
                     Toast.makeText(this, "No changes to commit.", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+                    return@reviewClick
                 }
                 val review = buildReviewDiff(original.content, newContent)
                 AlertDialog.Builder(this)
                     .setTitle("Confirm remote commit")
                     .setMessage(review)
                     .setNegativeButton("Back", null)
-                    .setPositiveButton("Create branch & commit") { _, _ ->
+                    .setPositiveButton("Create branch & commit") commitClick@{ _, _ ->
                         val baseSha = project.githubRevision
                         if (baseSha.isNullOrBlank()) {
                             Toast.makeText(this, "This repository has no pinned commit revision. Reconnect it before editing.", Toast.LENGTH_LONG).show()
-                            return@setPositiveButton
+                            return@commitClick
                         }
                         runGitHubRequest("Creating branch and committing reviewed file…", {
                             val client = GitHubRepositoryClient(credential)
