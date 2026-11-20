@@ -364,33 +364,163 @@ class MainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != REQUEST_FOLDER || resultCode != RESULT_OK) return
         val uri = data?.data ?: return
-        runCatching {
-            val flags = data.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            contentResolver.takePersistableUriPermission(uri, flags)
+        val grantedFlags = data.flags and (
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        )
+        if (grantedFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION == 0) {
+            Toast.makeText(this, "Android did not grant read access to that folder.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val persisted = runCatching {
+            contentResolver.takePersistableUriPermission(uri, grantedFlags)
+            contentResolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission }
+        }.getOrElse {
+            Toast.makeText(
+                this,
+                "PocketForge could not keep access to that folder: ${it.message ?: "permission unavailable"}",
+                Toast.LENGTH_LONG
+            ).show()
+            false
+        }
+        if (!persisted) {
+            Toast.makeText(this, "Folder access was not saved. Choose the folder again and allow access.", Toast.LENGTH_LONG).show()
+            return
         }
         showImportedProject(uri)
     }
 
     private fun showImportedProject(uri: Uri) {
         val form = formColumn()
-        val suggested = uri.lastPathSegment?.substringAfterLast(':')?.substringAfterLast('/')?.takeIf { it.isNotBlank() } ?: "Imported project"
+        val suggested = uri.lastPathSegment?.substringAfterLast(':')?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+            ?: "Imported project"
         val name = editField("Project name").apply { setText(suggested) }
-        val description = editField("Project purpose or constraints (optional)", multiline = true)
-        form.addView(label("FOLDER ACCESS GRANTED", 10f, mint, true))
+        val description = editField("What is this project for? (optional)", multiline = true)
+        form.addView(label("LOCAL FOLDER · NOT UPLOADED", 10f, mint, true))
         form.addView(space(8))
         form.addView(name)
         form.addView(space(9))
         form.addView(description)
+        form.addView(space(8))
+        form.addView(label(
+            "Your files stay in their original location. PocketForge saves access to this folder, scans its top level and shows what it recognizes. Nothing is copied or sent to GitHub.",
+            11f,
+            muted
+        ))
         AlertDialog.Builder(this)
-            .setTitle("Create Project Passport")
+            .setTitle("Link local project")
             .setView(form)
             .setNegativeButton("Cancel", null)
-            .setPositiveButton("Import") { _, _ ->
-                store.addProject(name.text.toString(), description.text.toString(), uri.toString())
-                Toast.makeText(this, "Project folder linked", Toast.LENGTH_SHORT).show()
+            .setPositiveButton("Link & inspect") { _, _ ->
+                val project = store.addProject(name.text.toString(), description.text.toString(), uri.toString())
                 render()
+                inspectLocalProject(project)
             }
             .show()
+    }
+
+    private fun inspectLocalProject(project: WorkspaceProject) {
+        val folderUri = project.folderUri ?: return
+        runBackgroundTask("Inspecting ${project.name}…", {
+            LocalProjectInspector.inspect(this, Uri.parse(folderUri))
+        }) { result ->
+            showLocalProjectOverview(project, result as LocalProjectSnapshot)
+        }
+    }
+
+    private fun showLocalProjectOverview(project: WorkspaceProject, snapshot: LocalProjectSnapshot) {
+        val directory = snapshot.directory
+        val countLabel = "${directory.totalEntries} top-level item${if (directory.totalEntries == 1) "" else "s"}"
+        val sample = directory.entries.take(10).joinToString("\n") { entry ->
+            (if (entry.isDirectory) "▸ " else "· ") + entry.name
+        }.ifBlank { "No visible files or folders at this level." }
+        val message = buildString {
+            append("FOLDER LINKED · ${if (snapshot.readOnly) "READ ONLY" else "READ / WRITE"}\n\n")
+            append("${snapshot.rootName}\n")
+            append("$countLabel")
+            if (directory.truncated) append(" (showing first ${directory.entries.size})")
+            append("\nDetected: ${snapshot.detectedProjectType}\n\n")
+            append(sample)
+            append("\n\nYour source files remain in the selected folder. PocketForge has inspected the folder structure; it has not copied, edited or built the project yet.")
+        }
+        AlertDialog.Builder(this)
+            .setTitle(project.name)
+            .setMessage(message)
+            .setNegativeButton("Close", null)
+            .setNeutralButton("Create mission") { _, _ -> createMissionForProject(project) }
+            .setPositiveButton("Browse files") { _, _ ->
+                browseLocalDirectory(project, snapshot.rootDocumentId, snapshot.rootName)
+            }
+            .show()
+    }
+
+    private fun browseLocalDirectory(
+        project: WorkspaceProject,
+        documentId: String,
+        pathLabel: String,
+        parentDocumentId: String? = null,
+        parentPathLabel: String? = null
+    ) {
+        val treeUri = project.folderUri?.let(Uri::parse) ?: return
+        runBackgroundTask("Reading $pathLabel…", {
+            LocalProjectInspector.listChildren(this, treeUri, documentId)
+        }) { result ->
+            val directory = result as LocalProjectDirectory
+            if (directory.entries.isEmpty()) {
+                val message = if (directory.totalEntries == 0) "This folder is empty." else "No items could be listed."
+                val builder = AlertDialog.Builder(this)
+                    .setTitle(pathLabel)
+                    .setMessage(message)
+                    .setPositiveButton("Done", null)
+                if (parentDocumentId != null) {
+                    builder.setNegativeButton("Up") { _, _ ->
+                        browseLocalDirectory(project, parentDocumentId, parentPathLabel ?: project.name)
+                    }
+                }
+                builder.show()
+                return@runBackgroundTask
+            }
+            val labels = directory.entries.map { entry ->
+                if (entry.isDirectory) "▸  ${entry.name}/"
+                else "·  ${entry.name}" + (entry.sizeBytes?.let { "  ·  ${formatBytes(it)}" } ?: "")
+            }.toTypedArray()
+            val builder = AlertDialog.Builder(this)
+                .setTitle(pathLabel)
+                .setItems(labels) { _, index ->
+                    val entry = directory.entries[index]
+                    if (entry.isDirectory) {
+                        browseLocalDirectory(project, entry.documentId, "$pathLabel/${entry.name}", documentId, pathLabel)
+                    } else {
+                        openLocalFile(treeUri, entry)
+                    }
+                }
+                .setPositiveButton("Done", null)
+            if (parentDocumentId != null) {
+                builder.setNegativeButton("Up") { _, _ ->
+                    browseLocalDirectory(project, parentDocumentId, parentPathLabel ?: project.name)
+                }
+            } else {
+                builder.setNegativeButton("Close", null)
+            }
+            builder.show()
+        }
+    }
+
+    private fun openLocalFile(treeUri: Uri, entry: LocalProjectEntry) {
+        runCatching {
+            val documentUri = LocalProjectInspector.documentUri(treeUri, entry.documentId)
+            val mimeType = contentResolver.getType(documentUri) ?: "*/*"
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(documentUri, mimeType)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(intent)
+        }.onFailure {
+            Toast.makeText(
+                this,
+                "No app could open ${entry.name}: ${it.message ?: "unsupported file type"}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     private fun showCreateMission() {
@@ -435,10 +565,13 @@ class MainActivity : Activity() {
                 .show()
             return
         }
-        val folder = if (project.folderUri == null) "No folder linked yet" else "A folder permission is saved on this device."
+        if (project.folderUri != null) {
+            inspectLocalProject(project)
+            return
+        }
         AlertDialog.Builder(this)
             .setTitle(project.name)
-            .setMessage("PROJECT PASSPORT\n\n${project.description.ifBlank { "No project brief added." }}\n\n$folder")
+            .setMessage("PROJECT PASSPORT\n\n${project.description.ifBlank { "No project brief added." }}\n\nNo local folder is linked yet.")
             .setPositiveButton("Close", null)
             .setNeutralButton("Create mission") { _, _ -> createMissionForProject(project) }
             .show()
@@ -464,22 +597,51 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun normalizeGitHubRepositoryInput(raw: String): String? {
+        val input = raw.trim()
+        if (input.isBlank()) return null
+        val path = when {
+            input.startsWith("git@github.com:", ignoreCase = true) -> input.substringAfter(':')
+            input.startsWith("https://", ignoreCase = true) || input.startsWith("http://", ignoreCase = true) -> {
+                val withoutScheme = input.substringAfter("://")
+                val host = withoutScheme.substringBefore('/')
+                if (!host.equals("github.com", true) && !host.equals("www.github.com", true)) return null
+                withoutScheme.substringAfter('/', "")
+            }
+            input.startsWith("www.github.com/", ignoreCase = true) -> input.substringAfter('/')
+            input.startsWith("github.com/", ignoreCase = true) -> input.substringAfter('/')
+            else -> input
+        }.substringBefore('?').substringBefore('#').trim('/')
+        val segments = path.split('/').filter { it.isNotBlank() }
+        if (segments.size < 2) return null
+        val owner = segments[0]
+        val repository = segments[1].removeSuffix(".git")
+        val fullName = "$owner/$repository"
+        return fullName.takeIf { Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").matches(it) }
+    }
+
     private fun showConnectGitHubRepository() {
         val form = formColumn()
-        val repository = editField("owner/repository")
-        val token = editField("Fine-grained token (optional for public repos)").apply {
+        val repository = editField("GitHub URL or owner/repository")
+        val token = editField("Fine-grained token (only for private repos)").apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
-        form.addView(label("CONNECT A REPOSITORY", 10f, accent, true))
+        form.addView(label("CONNECT A GITHUB REPOSITORY", 10f, accent, true))
         form.addView(space(8))
         form.addView(repository)
+        form.addView(space(7))
+        form.addView(label(
+            "Public repository: paste its GitHub URL or owner/repository; no token is needed. Private repository: add a fine-grained token with Metadata read-only and Contents read-only access.",
+            11f,
+            muted
+        ))
         form.addView(space(9))
         form.addView(token)
         form.addView(space(8))
         form.addView(actionText("Remove saved token for this repository", muted) {
-            val name = repository.text.toString().trim()
-            if (!Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").matches(name)) {
-                Toast.makeText(this, "Enter owner/repository first.", Toast.LENGTH_SHORT).show()
+            val name = normalizeGitHubRepositoryInput(repository.text.toString())
+            if (name == null) {
+                Toast.makeText(this, "Enter a GitHub repository URL or owner/repository first.", Toast.LENGTH_SHORT).show()
             } else {
                 AlertDialog.Builder(this)
                     .setTitle("Remove GitHub token?")
@@ -493,28 +655,32 @@ class MainActivity : Activity() {
             }
         })
         form.addView(space(8))
-        form.addView(label("Use a fine-grained GitHub token restricted to this repository with Contents: Read-only and Metadata: Read-only. Tokens are encrypted with Android Keystore and never saved in the project record.", 11f, muted))
+        form.addView(label(
+            "PocketForge verifies repository access, saves its default branch and pinned commit, then opens the connected project. Tokens are encrypted with Android Keystore. GitHub changes still require separate review and approval.",
+            10f,
+            muted
+        ))
         AlertDialog.Builder(this)
             .setTitle("Connect GitHub")
             .setView(form)
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Verify and connect") connectClick@{ _, _ ->
-                val fullName = repository.text.toString().trim()
-                if (!Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").matches(fullName)) {
-                    Toast.makeText(this, "Enter a repository as owner/repository.", Toast.LENGTH_LONG).show()
+                val fullName = normalizeGitHubRepositoryInput(repository.text.toString())
+                if (fullName == null) {
+                    Toast.makeText(this, "Paste a GitHub repository URL or enter owner/repository.", Toast.LENGTH_LONG).show()
                     return@connectClick
                 }
                 val suppliedToken = token.text.toString().trim()
                 val vault = GitHubTokenVault(this)
                 val effectiveToken = suppliedToken.takeIf { it.isNotBlank() } ?: vault.read(fullName)
-                runGitHubRequest("Verifying repository…", {
+                runBackgroundTask("Checking GitHub access and pinning $fullName…", {
                     val remote = GitHubRepositoryClient(effectiveToken).getRepository(fullName)
                     if (suppliedToken.isNotBlank()) vault.save(remote.fullName, suppliedToken)
                     store.addGitHubProject(remote)
                 }) { result ->
                     val project = result as WorkspaceProject
-                    Toast.makeText(this, "Connected ${project.githubRepository}", Toast.LENGTH_LONG).show()
                     render()
+                    showProject(project)
                 }
             }
             .show()
@@ -523,7 +689,7 @@ class MainActivity : Activity() {
     private fun browseGitHubPath(project: WorkspaceProject, path: String) {
         val repository = project.githubRepository ?: return
         val ref = project.githubRevision ?: project.githubDefaultBranch ?: "main"
-        runGitHubRequest("Loading ${if (path.isBlank()) repository else path}…", {
+        runBackgroundTask("Loading ${if (path.isBlank()) repository else path}…", {
             GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).listContents(repository, path, ref)
         }) { result ->
             val entries = result as List<GitHubEntry>
@@ -741,7 +907,7 @@ class MainActivity : Activity() {
         return if (diff.length > 12_000) diff.take(12_000) + "\n… diff preview truncated …" else diff
     }
 
-    private fun runGitHubRequest(title: String, request: () -> Any, onSuccess: (Any) -> Unit) {
+    private fun runBackgroundTask(title: String, request: () -> Any, onSuccess: (Any) -> Unit) {
         val progress = ProgressDialog(this).apply {
             setMessage(title)
             setCancelable(false)
