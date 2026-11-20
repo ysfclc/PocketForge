@@ -500,6 +500,10 @@ class MainActivity : Activity() {
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Verify and connect") { _, _ ->
                 val fullName = repository.text.toString().trim()
+                if (!Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").matches(fullName)) {
+                    Toast.makeText(this, "Enter a repository as owner/repository.", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
                 val suppliedToken = token.text.toString().trim()
                 val vault = GitHubTokenVault(this)
                 val effectiveToken = suppliedToken.takeIf { it.isNotBlank() } ?: vault.read(fullName)
@@ -637,6 +641,8 @@ class MainActivity : Activity() {
                         }
                         runGitHubRequest("Creating branch and committing reviewed file…", {
                             val client = GitHubRepositoryClient(credential)
+                            client.getRepository(repository)
+                            if (suppliedToken.isNotBlank()) GitHubTokenVault(this).save(repository, suppliedToken)
                             client.createBranch(repository, branchName, baseSha)
                             val commitSha = client.updateTextFile(
                                 repository = repository,
@@ -646,7 +652,6 @@ class MainActivity : Activity() {
                                 content = newContent,
                                 expectedBlobSha = original.blobSha
                             )
-                            if (suppliedToken.isNotBlank()) GitHubTokenVault(this).save(repository, suppliedToken)
                             commitSha
                         }) { result ->
                             val commitSha = result as String
