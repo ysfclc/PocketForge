@@ -52,7 +52,7 @@ class MainActivity : Activity() {
     private fun render() {
         val shell = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(background)
+            setBackgroundColor(this@MainActivity.background)
         }
         shell.addView(buildHeader(), LinearLayout.LayoutParams(-1, dp(76)))
         val scroll = ScrollView(this).apply {
@@ -819,7 +819,7 @@ class MainActivity : Activity() {
             maxLines = 4
             gravity = Gravity.TOP
         } else {
-            singleLine = true
+            setSingleLine(true)
         }
     }
 
