@@ -51,3 +51,13 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - GitHub mode covers scoped repository inspection, branches, diffs, approved commits/PRs, checks and artifact retrieval. GitHub Actions is a separate optional remote execution capability.
 - Local compilation, signing and installation remain independent of GitHub accounts and hosted-runner availability.
 - Updated the vision, scope, roadmap, architecture, mission invariants and README. This is a documentation/contract update, not an implemented GitHub connector.
+
+
+## 2026-11-20 — First direct GitHub project workflow authored
+
+- Added an Android GitHub REST adapter to verify a repository, capture its default-branch commit SHA, browse directory contents and read text files at the pinned revision.
+- Added repository-scoped GitHub token storage using AES-GCM with a non-exportable Android Keystore key. The encrypted preference key is derived from a SHA-256 digest of the repository identity; tokens are not stored in project records.
+- Extended the local workspace project schema compatibly with source kind, repository identity, default branch and pinned revision. Existing records without these fields continue to load as local projects.
+- Added a controlled single-file remote change path: create a working branch from the pinned commit, compare the current blob SHA to the reviewed base, show a line-based diff, require an explicit commit action, and require a separate explicit action to create a pull request. No merge action exists.
+- GitHub API mutations require a repository-scoped token; editing requires Contents read/write and PR creation additionally requires Pull requests read/write. Public repository browsing remains possible without a token.
+- Implementation is authored but not build/device verified. GitHub Actions still fails before runner allocation (runner_id 0, zero steps, no artifacts), so no APK or Kotlin compilation result is claimed.
