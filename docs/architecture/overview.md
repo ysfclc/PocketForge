@@ -13,9 +13,9 @@ Reuse official Rust, NDK, Gradle and Android toolchain. cargo-ndk outputs jniLib
 The mission engine operates on two first-class project sources:
 
 - **Local workspace adapter:** Android Storage Access Framework/document-tree grants and local project state. It exposes scoped project inspection and file operations to the local execution runtime. Local build/test/sign/install capabilities remain available without GitHub connectivity.
-- **GitHub repository adapter:** authenticated repository selection and scoped operations for source/history inspection, refs/branches, patch application, diff review, commits, pull requests, check status and artifact retrieval. Each operation declares required scopes, risk and observable postcondition.
+- **GitHub repository adapter:** the first Android implementation verifies a selected repository and reads its metadata, directory contents and text files from the default branch. Optional fine-grained tokens are encrypted with Android Keystore AES-GCM. This slice is read-only; branch creation, patch application, diff review, commits, pull requests, checks and artifact retrieval remain planned capabilities, each requiring its own scoped grant and observable postcondition.
 
-Both adapters implement shared project/source and capability contracts. They do not create separate mission engines. A local SAF folder is not presumed to be a Git repository; linking, cloning and synchronization are explicit operations with source revisions and conflict handling.
+Both adapters are represented as first-class project sources in the workspace store. The current GitHub implementation is a read-only API adapter; the shared mission/capability engine is not implemented yet. They do not create separate mission engines. A local SAF folder is not presumed to be a Git repository; linking, cloning and synchronization are explicit operations with source revisions and conflict handling.
 
 GitHub's repository API and GitHub Actions are separate capabilities. Actions can provide optional remote execution, but hosted runners are not a dependency for the local factory. Failure or unavailability of GitHub Actions must not disable local compilation, signing or installation.
 
