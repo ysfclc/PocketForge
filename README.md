@@ -38,6 +38,8 @@ The second command builds the Rust JNI libraries for all configured Android ABIs
 
 ## Architecture
 
+Binding mission-execution constraints: [mission execution invariants](docs/architecture/mission-execution-invariants.md). All development missions use one provider-agnostic, scoped execution lifecycle; examples are not hardcoded workflows.
+
 ```mermaid
 flowchart TD
   A[Native Android shell] --> B[Project and mission context]
