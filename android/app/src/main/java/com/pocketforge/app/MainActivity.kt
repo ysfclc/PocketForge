@@ -485,7 +485,7 @@ class MainActivity : Activity() {
                 val fullName = repository.text.toString().trim()
                 val suppliedToken = token.text.toString().trim()
                 val vault = GitHubTokenVault(this)
-                val effectiveToken = suppliedToken.ifBlank { vault.read() }
+                val effectiveToken = suppliedToken.takeIf { it.isNotBlank() } ?: vault.read()
                 runGitHubRequest("Verifying repository…", {
                     val remote = GitHubRepositoryClient(effectiveToken).getRepository(fullName)
                     if (suppliedToken.isNotBlank()) vault.save(suppliedToken)
