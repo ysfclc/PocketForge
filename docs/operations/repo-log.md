@@ -35,3 +35,10 @@ This slice is authored, not yet build- or device-verified. No agent execution, p
 ## Verification status
 
 A local mirror of the original foundation layout passed `scripts/verify-foundation.py`; PyYAML parsed all three workflow files; action SHA pins and explicit per-job permissions passed the static verifier. Rust, Android SDK/Gradle, actionlint and physical-device checks remain unverified. The latest explicit `ubuntu-24.04` pipeline run (43651673973) and security run (43651673846) each failed before runner assignment with `runner_id: 0`, empty steps and no runner name. Job-log retrieval returns `BlobNotFound`; the pipeline produced zero artifacts. The same pre-runner failure also occurred on `ubuntu-latest`. Account-level Actions settings and billing/runner entitlements are not available through the connected repository API. No build gate is marked passed until a runner executes the full pipeline.
+
+## 2026-11-20 — Mission execution constraints locked
+
+- Added [mission execution invariants](../architecture/mission-execution-invariants.md) defining outcome-driven missions, provider/tool separation, one bounded durable mission loop, scoped callable capabilities, result verification and safe recovery.
+- Updated `AGENTS.md`, `PRINCIPLES.md`, the architecture overview, product vision and Phase 2 roadmap to make the constraints mandatory.
+- This is a documentation/architecture constraint update only. The current Rust core remains a foundation scaffold and no agent execution, capability gateway or build artifact is claimed as implemented.
+- The user-approved product boundary remains PocketForge as a specialized Android development factory, independent from Memo.
