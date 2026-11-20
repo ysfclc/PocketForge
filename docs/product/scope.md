@@ -4,7 +4,14 @@ Keystone foundation: product/architecture/data/FFI contracts; Rust workspace pla
 
 First Local Factory slice implemented in the Android shell: local project workspace; Project Passport creation; existing folder linking through Android's Storage Access Framework; locally persisted mission queue with Draft / Ready states; and a Factory status screen that does not claim unverified build steps.
 
-Remaining intended scope: editable/exportable Project Passports; safe project file access; local Android toolchain/build execution; diagnostics, tests, cancellation and recovery; local/frontier provider adapters; capability-scoped GitHub and Memo connectors; signing/artifacts; optional sync and additional project types only with evidence.
+Two first-class project modes are in scope and share the same mission engine:
+
+- **Local project mode:** select/link an Android document tree, preserve scoped URI access, inspect and modify permitted project files, run supported local toolchains, test, sign with explicit approval and install artifacts.
+- **GitHub project mode:** authenticate to GitHub with least-privilege scopes; select repositories; inspect files, branches and commit history; create a working branch; prepare scoped changes and diffs; commit and open pull requests with approval; inspect checks and retrieve artifacts.
+
+A mission is bound to a source identity and revision. Local and GitHub modes must not silently overwrite each other or assume that a folder URI is a Git checkout. Explicit clone/link/sync behavior and conflict handling are required when work crosses modes.
+
+Remaining intended scope: editable/exportable Project Passports; safe project file access; local Android toolchain/build execution; direct GitHub repository capabilities; diagnostics, tests, cancellation and recovery; local/frontier provider adapters; capability-scoped Memo automation adapter; signing/artifacts; optional GitHub Actions execution and sync; additional project types only with evidence.
 
 Explicit non-goals:
 - No HTML, browser UI, web app or web control plane.
