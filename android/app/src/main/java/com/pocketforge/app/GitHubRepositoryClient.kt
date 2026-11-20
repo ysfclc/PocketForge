@@ -34,10 +34,20 @@ class GitHubRepositoryClient(private val token: String? = null) {
         require(REPOSITORY_PATTERN.matches(fullName)) { "Use owner/repository format." }
         val json = request("/repos/$fullName") as JSONObject
         val defaultBranch = json.optString("default_branch", "main")
-        val branchSha = runCatching {
+        val branchSha = try {
             val ref = request("/repos/$fullName/git/ref/heads/${encode(defaultBranch)}") as JSONObject
-            ref.getJSONObject("object").getString("sha")
-        }.getOrNull()
+            val sha = ref.getJSONObject("object").getString("sha")
+            if (!SHA_PATTERN.matches(sha)) {
+                throw GitHubApiException("GitHub returned an invalid commit revision for the default branch.")
+            }
+            sha
+        } catch (error: Exception) {
+            val detail = error.message?.takeIf { it.isNotBlank() }
+            throw GitHubApiException(
+                "Repository metadata was found, but PocketForge could not pin the default branch '$defaultBranch' to a commit. Check repository access and try again." +
+                    (detail?.let { "\\n\\n$it" } ?: "")
+            )
+        }
         return GitHubRepository(
             fullName = json.optString("full_name", fullName),
             name = json.optString("name", fullName.substringAfter('/')),
