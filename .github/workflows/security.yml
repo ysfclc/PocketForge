@@ -30,7 +30,7 @@ jobs:
         run: '"$HOME/go/bin/actionlint" -color'
 
       - name: Verify repository foundation and delivery contracts
-        run: ./scripts/verify-foundation.sh
+        run: bash ./scripts/verify-foundation.sh
 
       - name: Install pinned Cargo security scanners
         run: |
