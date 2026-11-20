@@ -367,7 +367,7 @@ class MainActivity : Activity() {
         val grantedFlags = data.flags and (
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         )
-        if (grantedFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION == 0) {
+        if ((grantedFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION) == 0) {
             Toast.makeText(this, "Android did not grant read access to that folder.", Toast.LENGTH_LONG).show()
             return
         }
@@ -460,7 +460,7 @@ class MainActivity : Activity() {
         parentDocumentId: String? = null,
         parentPathLabel: String? = null
     ) {
-        val treeUri = project.folderUri?.let(Uri::parse) ?: return
+        val treeUri = project.folderUri?.let { Uri.parse(it) } ?: return
         runBackgroundTask("Reading $pathLabel…", {
             LocalProjectInspector.listChildren(this, treeUri, documentId)
         }) { result ->
@@ -697,7 +697,7 @@ class MainActivity : Activity() {
                 AlertDialog.Builder(this).setTitle(path.ifBlank { repository })
                     .setMessage("This directory is empty.")
                     .setPositiveButton("Close", null).show()
-                return@runGitHubRequest
+                return@runBackgroundTask
             }
             val labels = entries.map { entry ->
                 val icon = if (entry.type == "dir") "▸" else "·"
@@ -722,7 +722,7 @@ class MainActivity : Activity() {
     private fun showGitHubFile(project: WorkspaceProject, path: String) {
         val repository = project.githubRepository ?: return
         val ref = project.githubRevision ?: project.githubDefaultBranch ?: "main"
-        runGitHubRequest("Reading ${path.substringAfterLast('/')}…", {
+        runBackgroundTask("Reading ${path.substringAfterLast('/')}…", {
             GitHubRepositoryClient(GitHubTokenVault(this).read(repository)).readTextFileWithSha(repository, path, ref)
         }) { result ->
             val file = result as GitHubTextFile
@@ -805,7 +805,7 @@ class MainActivity : Activity() {
                             Toast.makeText(this, "This repository has no pinned commit revision. Reconnect it before editing.", Toast.LENGTH_LONG).show()
                             return@commitClick
                         }
-                        runGitHubRequest("Creating branch and committing reviewed file…", {
+                        runBackgroundTask("Creating branch and committing reviewed file…", {
                             val client = GitHubRepositoryClient(credential)
                             client.getRepository(repository)
                             if (suppliedToken.isNotBlank()) GitHubTokenVault(this).save(repository, suppliedToken)
@@ -857,7 +857,7 @@ class MainActivity : Activity() {
             .setView(form)
             .setNegativeButton("Not now", null)
             .setPositiveButton("Create pull request") { _, _ ->
-                runGitHubRequest("Opening pull request…", {
+                runBackgroundTask("Opening pull request…", {
                     GitHubRepositoryClient(credential).createPullRequest(
                         repository = repository,
                         title = title.text.toString().trim().ifBlank { "PocketForge change" },
