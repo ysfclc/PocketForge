@@ -237,26 +237,44 @@ class MainActivity : Activity() {
     }
 
     private fun renderFactory() {
+        val projects = store.projects()
+        val hasLocalFolder = projects.any { it.folderUri != null }
+        val hasGitHubProject = projects.any { it.sourceKind == WorkspaceProject.SOURCE_GITHUB }
         page.addView(sectionTitle("BUILD FACTORY", "A transparent path from source revision to APK"))
         page.addView(space(14))
         page.addView(card {
-            addView(label("Keystone foundation", 19f, ink, true))
-            addView(space(6))
-            addView(label("The Android shell and Rust bridge are scaffolds. The production pipeline has not yet completed a runner-backed build.", 13f, muted))
+            addView(label("PocketForge CI build · VERIFIED", 18f, mint, true))
+            addView(space(7))
+            addView(label(
+                "The PocketForge app itself has a verified Android debug build. That proves this app can be packaged; it does not mean an imported project can be compiled on this phone yet.",
+                13f,
+                muted
+            ))
             addView(space(14))
             addView(label(nativeStatus, 12f, if (nativeStatus.startsWith("Native bridge responding")) mint else Color.rgb(255, 190, 105), true))
         })
         page.addView(space(18))
-        page.addView(sectionTitle("PIPELINE CHECKLIST", "No step is marked complete without evidence"))
+        page.addView(sectionTitle("PIPELINE CHECKLIST", "Only verified capabilities are marked complete"))
         page.addView(space(10))
-        listStep("01", "Project source", "Import a folder or create a Project Passport", store.projects().isNotEmpty())
-        listStep("02", "Rust Android libraries", "Cross-compile arm64, armv7 and x86_64", false)
-        listStep("03", "Android package", "Assemble and verify the debug APK", false)
-        listStep("04", "Artifact and provenance", "Publish the APK, SBOM and build attestation", false)
-        page.addView(space(18))
+        listStep(
+            "01",
+            "PocketForge Android package",
+            "Rust ABIs, Rust tests, Gradle APK, signature, SBOM and provenance passed in CI",
+            true
+        )
+        listStep(
+            "02",
+            "Project source",
+            "Local folder linked: ${if (hasLocalFolder) "yes" else "not yet"} · GitHub repository connected: ${if (hasGitHubProject) "yes" else "not yet"}",
+            hasLocalFolder || hasGitHubProject
+        )
+        listStep("03", "Local project build", "Compile and test an imported project on this device", false)
+        listStep("04", "Mission execution", "Connect an agent, run tools and verify its changes", false)
+        listStep("05", "Approved release", "Sign and install a selected project's verified artifact", false)
+        page.addView(space(12))
         page.addView(emptyCard(
-            "Build execution is not connected yet",
-            "GitHub Actions jobs are currently failing before a runner is assigned. The app does not pretend an APK exists. The next gate is a real CI run, then local project builds."
+            "What works now — and what is next",
+            "You can create a Project Passport, link and inspect a local folder, connect and browse a GitHub repository, and prepare a reviewed GitHub file change. PocketForge does not yet compile imported projects locally or execute coding agents. Those are the next factory capabilities."
         ))
     }
 
