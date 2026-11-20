@@ -6,6 +6,8 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URLEncoder
 import java.net.URL
+import java.nio.ByteBuffer
+import java.nio.charset.CodingErrorAction
 
 data class GitHubRepository(
     val fullName: String,
@@ -94,7 +96,7 @@ class GitHubRepositoryClient(private val token: String? = null) {
         } catch (_: IllegalArgumentException) {
             throw GitHubApiException("GitHub returned invalid base64 content.")
         }
-        return bytes.toString(Charsets.UTF_8)
+        return decodeUtf8(bytes)
     }
 
     fun readTextFileWithSha(repository: String, path: String, ref: String): GitHubTextFile {
@@ -113,7 +115,7 @@ class GitHubRepositoryClient(private val token: String? = null) {
             throw GitHubApiException("GitHub returned invalid base64 content.")
         }
         return GitHubTextFile(
-            content = bytes.toString(Charsets.UTF_8),
+            content = decodeUtf8(bytes),
             blobSha = json.optString("sha")
         )
     }
@@ -237,6 +239,16 @@ class GitHubRepositoryClient(private val token: String? = null) {
         } finally {
             connection.disconnect()
         }
+    }
+
+    private fun decodeUtf8(bytes: ByteArray): String = try {
+        Charsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .decode(ByteBuffer.wrap(bytes))
+            .toString()
+    } catch (_: Exception) {
+        throw GitHubApiException("This file is binary or is not valid UTF-8 text; PocketForge will not rewrite it as text.")
     }
 
     private fun encode(value: String): String =
