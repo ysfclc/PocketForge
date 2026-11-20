@@ -42,3 +42,4 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Updated `AGENTS.md`, `PRINCIPLES.md`, the architecture overview, product vision and Phase 2 roadmap to make the constraints mandatory.
 - This is a documentation/architecture constraint update only. The current Rust core remains a foundation scaffold and no agent execution, capability gateway or build artifact is claimed as implemented.
 - The user-approved product boundary remains PocketForge as a specialized Android development factory, independent from Memo.
+- Draft review is open as [PR #2](https://github.com/ysfclc/PocketForge/pull/2); it is not merged.
