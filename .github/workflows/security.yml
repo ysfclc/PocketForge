@@ -43,7 +43,7 @@ jobs:
 
       - name: Audit locked Rust dependencies for known advisories
         working-directory: core
-        run: cargo audit --locked
+        run: cargo audit
 
   dependency-review:
     if: github.event_name == 'pull_request'
