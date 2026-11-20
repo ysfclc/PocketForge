@@ -24,6 +24,7 @@ android {
     signingConfigs {
         create("preview") {
             if (!previewStoreFile.isNullOrBlank()) {
+                storeType = "PKCS12"
                 storeFile = file(previewStoreFile)
                 storePassword = previewStorePassword
                 keyAlias = previewKeyAlias
