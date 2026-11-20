@@ -99,7 +99,7 @@ class WorkspaceStore(context: Context) {
                 name = repository.name,
                 description = repository.description,
                 githubDefaultBranch = repository.defaultBranch,
-                githubRevision = repository.defaultBranchSha
+                githubRevision = repository.defaultBranchSha ?: existing.githubRevision
             )
             replaceProject(refreshed)
             return refreshed
