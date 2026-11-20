@@ -1,4 +1,5 @@
 [package]
+publish = false
 name = "pocketforge-ffi"
 version.workspace = true
 edition.workspace = true
@@ -6,4 +7,4 @@ license.workspace = true
 [lib]
 crate-type = ["cdylib", "staticlib"]
 [dependencies]
-pocketforge-core = { path = "../pocketforge-core" }
+pocketforge-core = { version = "0.1.0", path = "../pocketforge-core" }
