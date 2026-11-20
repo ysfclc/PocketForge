@@ -93,6 +93,13 @@ security_workflow = Path(".github/workflows/security.yml").read_text()
 assert "run: cargo audit" in security_workflow, "Use cargo-audit's supported command syntax"
 assert "cargo audit --locked" not in security_workflow, "cargo-audit does not accept Cargo's --locked flag"
 
+android_build = Path("android/app/build.gradle.kts").read_text()
+preview_manifest_path = Path("android/app/src/debug/AndroidManifest.xml")
+assert 'applicationIdSuffix = ".preview"' in android_build, "Preview must install alongside the earlier debug package"
+assert "previewStoreFile" in android_build and 'signingConfigs.getByName("preview")' in android_build, "Preview needs configurable persistent signing"
+assert preview_manifest_path.is_file() and "PocketForge Preview" in preview_manifest_path.read_text(), "Preview app label must be distinguishable"
+gitignore = Path(".gitignore").read_text()
+assert "*.p12" in gitignore and "*.jks" in gitignore, "Private signing keystores must be ignored"
 manifest = Path("android/app/src/main/AndroidManifest.xml").read_text()
 assert "android.permission.INTERNET" in manifest, "GitHub API requires INTERNET permission"
 assert r"\${" not in app, "Kotlin interpolation is accidentally escaped"
@@ -103,6 +110,9 @@ for contract in (
     "pull_request:", "push:", "branches: [main]", "workflow_dispatch:",
     "scripts/verify-foundation.sh", "scripts/build-rust.sh",
     "cargo +1.82.0 test", "assembleDebug", "apksigner",
+    "POCKETFORGE_DEBUG_KEYSTORE_BASE64", "POCKETFORGE_DEBUG_KEYSTORE_PASSWORD",
+    "POCKETFORGE_DEBUG_KEY_ALIAS", "POCKETFORGE_DEBUG_KEY_PASSWORD",
+    "Remove Preview signing material", "Prepare persistent Preview signing key",
     "sbom-action", "attest-build-provenance", "upload-artifact",
 ):
     assert contract in pipeline, f"Direct CI pipeline missing contract: {contract}"
