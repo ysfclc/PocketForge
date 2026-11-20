@@ -97,3 +97,14 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - The separate Dependency Review action remains unavailable because GitHub reports Dependency Graph disabled for the repository. This setting must be enabled in repository Settings → Security → Code security and analysis → Dependency graph; the workflow has not been weakened or skipped.
 - The app has not yet been physically tested on the target device after these changes. The user must verify local folder linking/inspection/browsing and public/private GitHub connection and pinned-revision browsing. Local compilation of imported projects and mission/agent execution remain unimplemented.
 - Pull request #2 remains open/draft and unmerged pending user approval.
+
+
+## 2026-11-20 — Signing identity mismatch and safe Preview migration
+
+- Compared the APK v2 certificates embedded in the initial delivered APK (run #87, artifact 14653222608) and the later onboarding APK (run #109, artifact 14657897652). Their SHA-256 fingerprints differ: `00af6871dc79aed713536c7dad0ff6f7337bec3b2ade2c9c9f080f4364ff2e43` and `d3a0f59cf47490a88a3edb4908abf3b57bec9227fe834f4464b326e9e0a52ba8`. Android will not accept the latter as an in-place update of the first installation.
+- The development variant now uses package `com.pocketforge.app.preview` and a separate launcher label, **PocketForge Preview**, so the earlier `com.pocketforge.app.debug` installation remains untouched.
+- Added a dedicated Gradle Preview signing configuration with explicit `PKCS12` store type. Trusted same-repository CI builds require a private persistent keystore supplied through four repository Actions secrets. The workflow materializes it only in runner temp storage and removes it after APK assembly. Fork PRs cannot access repository secrets and are explicitly marked non-updatable.
+- Generated the Preview PKCS12 keystore and a local secret bundle under `/mnt/data`; neither is committed or uploaded to the public repository. The keystore was validated with `keytool` as alias `pocketforge-preview`, entry type `PrivateKeyEntry`.
+- Preview certificate SHA-256 fingerprint: `9D:89:C5:B3:3B:9D:B7:56:B6:00:84:22:8B:B9:58:98:12:C7:1F:D5:F7:56:2E:30:A7:D4:AB:39:06:D0:6D:5F`.
+- User action is required to add the four values from the private bundle to repository Settings → Secrets and variables → Actions. After that, dispatch the pipeline to produce the first trusted Preview APK. Production release signing remains separate.
+- Preview has a fresh app-private store; the original app is not removed. Re-select the source folder inside Preview to create its local record and persisted Android folder permission.
