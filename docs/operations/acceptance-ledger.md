@@ -13,6 +13,8 @@
 | Rust three Android ABIs | Passed in current CI run #109 | `cargo-ndk` built arm64-v8a, armeabi-v7a and x86_64 in run 44793160312 |
 | Android debug APK | Passed in current PR-head CI run #109 | Artifact 14657897652; package `com.pocketforge.app.debug`, version `0.1.0-keystone`, min API 26, target API 35; APK v2 signature verified |
 | actionlint and foundation verification | Passed on current PR head in security run #122 | `actionlint` and `scripts/verify-foundation.sh` succeeded in run 44793160820 |
+| Rust dependency policy | Passed in security run #122 | `cargo deny check` reports advisories, bans, licenses and sources all OK; `cargo audit` passed against the checked-in lockfile |
+| GitHub Dependency Review integration | Blocked by repository configuration, not Rust dependency scan | Run 44793160820 reports Dependency Review unsupported because Dependency Graph is disabled; enable it in repository Settings → Security → Code security and analysis → Dependency graph |
 | SBOM and provenance attestation | Passed in current CI run #109 | SBOM artifact 14657571912; APK SHA-256 `fe90729305a10ee1e9c8bfdc3e4507bdccb8bc100ba6fc149cd18ee59da7846b`; provenance attestation emitted and uploaded by run 44793160312 |
 | iOS contract-only scaffold | Authored; intentionally gated | no Xcode build job |
 | Protected release signing | Not configured/verified | approved Environment run |
