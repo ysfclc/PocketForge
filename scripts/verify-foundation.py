@@ -52,6 +52,10 @@ for contract in (
 ):
     assert contract in app, f"Native project onboarding missing contract: {contract}"
 assert "runGitHubRequest" not in app, "Obsolete GitHub-only background task label remains"
+assert "pinnedRevisionOrReconnect" in app, "GitHub browsing must require a pinned commit"
+assert "initialRepository: String? = null" in app, "GitHub reconnect should prefill the repository"
+assert "project.githubRevision ?: project.githubDefaultBranch" not in app, "GitHub browsing must not fall back to a moving branch"
+assert "sizeColumn < 0" in local_inspector, "Local inspection must tolerate providers without an optional size column"
 
 github_client_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubRepositoryClient.kt")
 github_vault_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubTokenVault.kt")
@@ -68,6 +72,7 @@ for contract in (
     "fun getRepository(", "fun listContents(", "fun readTextFileWithSha(",
     "fun createBranch(", "fun updateTextFile(", "fun createPullRequest(",
     "currentSha != expectedBlobSha", "CodingErrorAction.REPORT",
+    "SHA_PATTERN.matches(sha)", "could not pin the default branch",
 ):
     assert contract in github_client, f"GitHub repository adapter missing contract: {contract}"
 for contract in (
@@ -77,6 +82,13 @@ for contract in (
     assert contract in github_vault, f"GitHub credential vault missing security contract: {contract}"
 for contract in ("SOURCE_GITHUB", "githubRepository", "githubDefaultBranch", "githubRevision"):
     assert contract in store, f"Workspace source model missing GitHub field: {contract}"
+ffi_manifest = Path("core/pocketforge-ffi/Cargo.toml").read_text()
+core_manifest = Path("core/pocketforge-core/Cargo.toml").read_text()
+deny_policy = Path("core/deny.toml").read_text()
+assert "publish = false" in ffi_manifest and "publish = false" in core_manifest, "Proprietary workspace crates must remain unpublished"
+assert 'version = "0.1.0", path = "../pocketforge-core"' in ffi_manifest, "Internal path dependency must have an explicit version"
+assert "private = { ignore = true }" in deny_policy, "License checks must ignore only unpublished private workspace members"
+
 manifest = Path("android/app/src/main/AndroidManifest.xml").read_text()
 assert "android.permission.INTERNET" in manifest, "GitHub API requires INTERNET permission"
 assert r"\${" not in app, "Kotlin interpolation is accidentally escaped"
