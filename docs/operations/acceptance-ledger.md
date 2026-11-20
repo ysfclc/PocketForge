@@ -19,6 +19,7 @@
 | iOS contract-only scaffold | Authored; intentionally gated | no Xcode build job |
 | Protected release signing | Not configured/verified | approved Environment run |
 | Physical device acceptance | Initial APK launch observed by user; revised onboarding not yet tested | On device: import a folder, inspect/browse/open; connect public GitHub URL, inspect pinned SHA and browse; separately test private token and reviewed write approval |
+| Persistent Preview signing and safe install migration | Private PKCS12 Preview signing key generated but not committed; four GitHub Actions secrets still need user configuration | Configure `POCKETFORGE_DEBUG_KEYSTORE_BASE64`, `POCKETFORGE_DEBUG_KEYSTORE_PASSWORD`, `POCKETFORGE_DEBUG_KEY_ALIAS`, `POCKETFORGE_DEBUG_KEY_PASSWORD`, then dispatch a Preview build; package `com.pocketforge.app.preview` must install beside `com.pocketforge.app.debug` |
 | Gradle dependency verification metadata | Deferred Phase 1 gate | committed verification-metadata.xml and strict CI mode |
 
 Never mark pending/not-tested as passed without command, run URL, revision and result.
@@ -71,3 +72,11 @@ The new connector source and static contract checks were committed to the featur
 - Security run #122: actionlint, the expanded foundation verifier, `cargo deny check` (advisories, bans, licenses and sources all OK) and `cargo audit` passed. The overall workflow still reports failure because the separate Dependency Review action says Dependency Graph is disabled for this repository. Enable it under GitHub repository Settings → Security → Code security and analysis → Dependency graph to clear that integration-level block.
 - This verifies PocketForge's own debug package and static/source security checks. It does not prove real-device behavior of folder/GitHub flows, local compilation of imported projects, or agent execution.
 - Physical device acceptance remains pending. The next acceptance pass must exercise local folder selection/permission persistence/inspection/browsing and public/private GitHub connect/pinned browsing on the target phone.
+
+
+## Safe Preview package migration — 2026-11-20
+
+- Comparing the first delivered APK artifact (#87) with the later CI APK (#109) shows different v2 signer certificate SHA-256 fingerprints: `00af6871dc79aed713536c7dad0ff6f7337bec3b2ade2c9c9f080f4364ff2e43` versus `d3a0f59cf47490a88a3edb4908abf3b57bec9227fe834f4464b326e9e0a52ba8`. The second cannot update the first installation in place.
+- To avoid telling the user to uninstall an app containing local project metadata, the development build is being moved to a separate `com.pocketforge.app.preview` package labelled **PocketForge Preview**. The old `com.pocketforge.app.debug` app stays installed. Preview has a fresh app-private store; re-link the original folder inside Preview (the source files themselves remain untouched).
+- A private PKCS12 Preview keystore has been generated outside the repository. It is not committed or uploaded as a public artifact. The trusted CI Preview build is gated on four repository Actions secrets, documented in [preview-signing.md](preview-signing.md).
+- Next gate: user configures those four secrets, then dispatches the PocketForge CI pipeline. The resulting stable Preview signer will be reused for future Preview updates. Release signing remains separate.
