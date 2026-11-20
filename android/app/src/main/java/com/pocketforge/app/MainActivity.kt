@@ -428,7 +428,7 @@ class MainActivity : Activity() {
         if (project.sourceKind == WorkspaceProject.SOURCE_GITHUB) {
             AlertDialog.Builder(this)
                 .setTitle(project.name)
-                .setMessage("GITHUB REPOSITORY\n\n\${project.githubRepository}\nDefault branch: \${project.githubDefaultBranch ?: "unknown"}\n\n\${project.description.ifBlank { "No repository description." }}\n\nRepository browsing is read-only in this first connector slice.")
+                .setMessage("GITHUB REPOSITORY\n\n${project.githubRepository}\nDefault branch: ${project.githubDefaultBranch ?: "unknown"}\n\n${project.description.ifBlank { "No repository description." }}\n\nRepository browsing is read-only in this first connector slice.")
                 .setNegativeButton("Close", null)
                 .setNeutralButton("Browse files") { _, _ -> browseGitHubPath(project, "") }
                 .setPositiveButton("Create mission") { _, _ -> createMissionForProject(project) }
@@ -438,7 +438,7 @@ class MainActivity : Activity() {
         val folder = if (project.folderUri == null) "No folder linked yet" else "A folder permission is saved on this device."
         AlertDialog.Builder(this)
             .setTitle(project.name)
-            .setMessage("PROJECT PASSPORT\n\n\${project.description.ifBlank { "No project brief added." }}\n\n$folder")
+            .setMessage("PROJECT PASSPORT\n\n${project.description.ifBlank { "No project brief added." }}\n\n$folder")
             .setPositiveButton("Close", null)
             .setNeutralButton("Create mission") { _, _ -> createMissionForProject(project) }
             .show()
@@ -454,7 +454,7 @@ class MainActivity : Activity() {
         form.addView(space(9))
         form.addView(brief)
         AlertDialog.Builder(this)
-            .setTitle("Mission for \${project.name}")
+            .setTitle("Mission for ${project.name}")
             .setView(form)
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Save mission") { _, _ ->
@@ -492,7 +492,7 @@ class MainActivity : Activity() {
                     store.addGitHubProject(remote)
                 }) { result ->
                     val project = result as WorkspaceProject
-                    Toast.makeText(this, "Connected \${project.githubRepository}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Connected ${project.githubRepository}", Toast.LENGTH_LONG).show()
                     render()
                 }
             }
@@ -502,7 +502,7 @@ class MainActivity : Activity() {
     private fun browseGitHubPath(project: WorkspaceProject, path: String) {
         val repository = project.githubRepository ?: return
         val ref = project.githubDefaultBranch ?: "main"
-        runGitHubRequest("Loading \${if (path.isBlank()) repository else path}…", {
+        runGitHubRequest("Loading ${if (path.isBlank()) repository else path}…", {
             GitHubRepositoryClient(GitHubTokenVault(this).read()).listContents(repository, path, ref)
         }) { result ->
             val entries = result as List<GitHubEntry>
@@ -514,7 +514,7 @@ class MainActivity : Activity() {
             }
             val labels = entries.map { entry ->
                 val icon = if (entry.type == "dir") "▸" else "·"
-                if (entry.type == "dir") "$icon  \${entry.name}/" else "$icon  \${entry.name}  ·  \${formatBytes(entry.size)}"
+                if (entry.type == "dir") "$icon  ${entry.name}/" else "$icon  ${entry.name}  ·  ${formatBytes(entry.size)}"
             }.toTypedArray()
             AlertDialog.Builder(this)
                 .setTitle(path.ifBlank { repository })
@@ -535,7 +535,7 @@ class MainActivity : Activity() {
     private fun showGitHubFile(project: WorkspaceProject, path: String) {
         val repository = project.githubRepository ?: return
         val ref = project.githubDefaultBranch ?: "main"
-        runGitHubRequest("Reading \${path.substringAfterLast('/')}…", {
+        runGitHubRequest("Reading ${path.substringAfterLast('/')}…", {
             GitHubRepositoryClient(GitHubTokenVault(this).read()).readTextFile(repository, path, ref)
         }) { result ->
             val content = result as String
@@ -547,7 +547,7 @@ class MainActivity : Activity() {
                 .setPositiveButton("Close", null)
                 .setNeutralButton("Open on GitHub") { _, _ ->
                     runCatching {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/$repository/blob/\${encodePath(ref)}/\${encodePath(path)}")))
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/$repository/blob/${encodePath(ref)}/${encodePath(path)}")))
                     }
                 }
                 .show()
@@ -581,8 +581,8 @@ class MainActivity : Activity() {
 
     private fun formatBytes(bytes: Long): String = when {
         bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "\${bytes / 1024} KB"
-        else -> "\${bytes / (1024 * 1024)} MB"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        else -> "${bytes / (1024 * 1024)} MB"
     }
 
     private fun encodePath(value: String): String =
