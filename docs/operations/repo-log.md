@@ -86,3 +86,14 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Added GitHub URL normalization for HTTPS, github.com, www.github.com, SSH-style `git@github.com:owner/repository.git`, and plain `owner/repository`. Successful connection now opens the connected project details so the user can continue directly to repository browsing or mission creation.
 - Updated the Factory screen to distinguish the verified PocketForge CI APK from local compilation of imported projects and agent execution, which remain unimplemented.
 - Extended the foundation verifier and updated README, product scope, roadmap and acceptance ledger. The onboarding revision has been authored directly on the existing draft PR branch; its own CI build and physical-device acceptance are still pending.
+
+
+## 2026-11-20 — Verified first-use build and security checks
+
+- Current app source includes the first-use fixes: local SAF permission validation, folder inspection and scoped browsing; GitHub URL normalization and post-connect project handoff; strict immutable commit pinning; a reconnect path for legacy unpinned connections; and tolerant handling of Android document providers that omit optional file-size metadata.
+- Successful current-source Android pipeline #109: https://github.com/ysfclc/PocketForge/actions/runs/44793160312 (source commit `c0b829cff3500c54903c047cc8375bed323e3dcb`). Rust builds for arm64-v8a, armeabi-v7a and x86_64, Rust tests, Clippy, foundation verification, Gradle assembly, APK v2 signature verification, SBOM, provenance and artifact upload all passed.
+- APK artifact ID 14657897652; SBOM artifact ID 14657571912; provenance attestation 70276389. APK SHA-256 `fe90729305a10ee1e9c8bfdc3e4507bdccb8bc100ba6fc149cd18ee59da7846b`; downloaded APK hash matches the attestation subject.
+- Security run #122: `actionlint`, the expanded foundation verifier, `cargo deny check` and `cargo audit` all passed. `cargo deny` reports advisories, bans, licenses and sources all OK.
+- The separate Dependency Review action remains unavailable because GitHub reports Dependency Graph disabled for the repository. This setting must be enabled in repository Settings → Security → Code security and analysis → Dependency graph; the workflow has not been weakened or skipped.
+- The app has not yet been physically tested on the target device after these changes. The user must verify local folder linking/inspection/browsing and public/private GitHub connection and pinned-revision browsing. Local compilation of imported projects and mission/agent execution remain unimplemented.
+- Pull request #2 remains open/draft and unmerged pending user approval.
