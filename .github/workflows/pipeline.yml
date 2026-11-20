@@ -70,16 +70,49 @@ jobs:
           cargo +1.82.0 test --workspace --locked
           cargo +1.82.0 clippy --workspace --all-targets --locked -- -D warnings
 
-      - name: Assemble Android debug APK
+      - name: Prepare persistent Preview signing key
+        shell: bash
+        env:
+          PREVIEW_KEYSTORE_BASE64: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_BASE64 }}
+          PREVIEW_STORE_PASSWORD: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_PASSWORD }}
+          PREVIEW_KEY_ALIAS: ${{ secrets.POCKETFORGE_DEBUG_KEY_ALIAS }}
+          PREVIEW_KEY_PASSWORD: ${{ secrets.POCKETFORGE_DEBUG_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${PREVIEW_KEYSTORE_BASE64:-}" || -z "${PREVIEW_STORE_PASSWORD:-}" || -z "${PREVIEW_KEY_ALIAS:-}" || -z "${PREVIEW_KEY_PASSWORD:-}" ]]; then
+            if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && "${GITHUB_HEAD_REPOSITORY:-}" != "${GITHUB_REPOSITORY:-}" ]]; then
+              echo "::notice::Fork PR: private Preview signing secrets are unavailable; using the runner's temporary debug key. Do not use this artifact for in-place updates."
+              exit 0
+            fi
+            echo "::error::Configure the four POCKETFORGE_DEBUG_* repository Actions secrets before building a trusted Preview APK."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/pocketforge-preview-debug.p12"
+          test -s "$RUNNER_TEMP/pocketforge-preview-debug.p12"
+          echo "ORG_GRADLE_PROJECT_previewStoreFile=$RUNNER_TEMP/pocketforge-preview-debug.p12" >> "$GITHUB_ENV"
+          unset PREVIEW_KEYSTORE_BASE64
+
+      - name: Assemble Android Preview APK
         working-directory: android
+        env:
+          ORG_GRADLE_PROJECT_previewStorePassword: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_previewKeyAlias: ${{ secrets.POCKETFORGE_DEBUG_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_previewKeyPassword: ${{ secrets.POCKETFORGE_DEBUG_KEY_PASSWORD }}
         run: gradle --no-daemon --stacktrace assembleDebug
 
-      - name: Verify APK signature and package metadata
+      - name: Remove Preview signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/pocketforge-preview-debug.p12"
+
+      - name: Verify Preview APK signature and package metadata
         run: |
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose "$APK"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          BADGING="$("$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK")"
+          printf '%s\n' "$BADGING" | grep -F "package: name='com.pocketforge.app.preview'"
+          printf '%s\n' "$BADGING" | grep -E "^sdkVersion:|^targetSdkVersion:"
 
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75
@@ -96,7 +129,7 @@ jobs:
       - name: Upload debug APK and SBOM
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: pocketforge-debug-${{ github.sha }}
+          name: pocketforge-preview-${{ github.sha }}
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             pocketforge.cdx.json
