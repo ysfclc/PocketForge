@@ -38,6 +38,21 @@ for contract in (
     assert contract in store, f"Local workspace store missing contract: {contract}"
 assert "No product features included." not in app
 
+local_inspector_path = Path("android/app/src/main/java/com/pocketforge/app/LocalProjectInspector.kt")
+assert local_inspector_path.is_file(), "Missing SAF-scoped local project inspector"
+local_inspector = local_inspector_path.read_text()
+for contract in (
+    "persistedUriPermissions", "buildChildDocumentsUriUsingTree",
+    "buildDocumentUriUsingTree", "detectProjectType", "MAX_DIRECTORY_ENTRIES",
+):
+    assert contract in local_inspector, f"Local project inspector missing contract: {contract}"
+for contract in (
+    "persistedUriPermissions.any", "inspectLocalProject", "showLocalProjectOverview",
+    "browseLocalDirectory", "normalizeGitHubRepositoryInput", "runBackgroundTask",
+):
+    assert contract in app, f"Native project onboarding missing contract: {contract}"
+assert "runGitHubRequest" not in app, "Obsolete GitHub-only background task label remains"
+
 github_client_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubRepositoryClient.kt")
 github_vault_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubTokenVault.kt")
 assert github_client_path.is_file(), "Missing native GitHub repository adapter"
