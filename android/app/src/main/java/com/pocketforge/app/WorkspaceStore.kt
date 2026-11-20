@@ -112,7 +112,8 @@ class WorkspaceStore(context: Context) {
             createdAt = System.currentTimeMillis(),
             sourceKind = WorkspaceProject.SOURCE_GITHUB,
             githubRepository = repository.fullName,
-            githubDefaultBranch = repository.defaultBranch
+            githubDefaultBranch = repository.defaultBranch,
+            githubRevision = repository.defaultBranchSha
         )
         persistProject(project)
         return project
