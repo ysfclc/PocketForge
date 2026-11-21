@@ -170,7 +170,7 @@ class MainActivity : Activity() {
             }
         }
         page.addView(space(12))
-        page.addView(outlineAction("＋  Import local project folder") { launchFolderPicker() })
+        page.addView(outlineAction("＋  Link existing project folder") { launchFolderPicker() })
         page.addView(space(8))
         page.addView(outlineAction("⌘  Connect GitHub repository") { showConnectGitHubRepository() })
         page.addView(space(24))
@@ -207,7 +207,7 @@ class MainActivity : Activity() {
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         actions.addView(pillButton("＋  New project", true) { showCreateProject() }, LinearLayout.LayoutParams(0, dp(46), 1f))
         actions.addView(spaceWidth(9))
-        actions.addView(pillButton("Import folder", false) { launchFolderPicker() }, LinearLayout.LayoutParams(0, dp(46), 1f))
+        actions.addView(pillButton("Link folder", false) { launchFolderPicker() }, LinearLayout.LayoutParams(0, dp(46), 1f))
         box.addView(actions)
         return box
     }
@@ -413,14 +413,14 @@ class MainActivity : Activity() {
             ?: "Imported project"
         val name = editField("Project name").apply { setText(suggested) }
         val description = editField("What is this project for? (optional)", multiline = true)
-        form.addView(label("LOCAL FOLDER · NOT UPLOADED", 10f, mint, true))
+        form.addView(label("LINK EXISTING FOLDER · NO COPY", 10f, mint, true))
         form.addView(space(8))
         form.addView(name)
         form.addView(space(9))
         form.addView(description)
         form.addView(space(8))
         form.addView(label(
-            "Your files stay in their original location. PocketForge saves access to this folder, scans its top level and shows what it recognizes. Nothing is copied or sent to GitHub.",
+            "Your files stay where they are. PocketForge links this folder, identifies the project type and lets you browse its files. Nothing is copied or uploaded.",
             11f,
             muted
         ))
@@ -428,7 +428,7 @@ class MainActivity : Activity() {
             .setTitle("Link local project")
             .setView(form)
             .setNegativeButton("Cancel", null)
-            .setPositiveButton("Link & inspect") { _, _ ->
+            .setPositiveButton("Link folder & inspect") { _, _ ->
                 val project = store.addProject(name.text.toString(), description.text.toString(), uri.toString())
                 render()
                 inspectLocalProject(project)
