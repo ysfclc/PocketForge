@@ -2,9 +2,18 @@
 
 Keystone foundation: product/architecture/data/FFI contracts; Rust workspace placeholder for three Android targets; native Android shell packaging Rust; iOS contract scaffold only; agent roster, skills, security and Git-native phase protocol.
 
-First Local Factory slice implemented in the Android shell: local project workspace; Project Passport creation; existing folder linking through Android's Storage Access Framework; locally persisted mission queue with Draft / Ready states; and a Factory status screen that does not claim unverified build steps.
+First Local Factory slice implemented in the Android shell: local project workspace; Project Passport creation; persisted Storage Access Framework folder linking; root-folder inspection, basic project-type hints and scoped folder/file browsing; locally persisted mission queue with Draft / Ready states; and a Factory status screen that distinguishes PocketForge's verified CI APK from unimplemented imported-project builds.
 
-Remaining intended scope: editable/exportable Project Passports; safe project file access; local Android toolchain/build execution; diagnostics, tests, cancellation and recovery; local/frontier provider adapters; capability-scoped GitHub and Memo connectors; signing/artifacts; optional sync and additional project types only with evidence.
+Two first-class project modes are in scope and share the same mission engine:
+
+- **Local project mode:** select/link an Android document tree, preserve scoped URI access, inspect and modify permitted project files, run supported local toolchains, test, sign with explicit approval and install artifacts.
+- **GitHub project mode:** authenticate to GitHub with least-privilege scopes; select repositories; inspect files, branches and commit history; create a working branch; prepare scoped changes and diffs; commit and open pull requests with approval; inspect checks and retrieve artifacts.
+
+A mission is bound to a source identity and revision. Local and GitHub modes must not silently overwrite each other or assume that a folder URI is a Git checkout. Explicit clone/link/sync behavior and conflict handling are required when work crosses modes.
+
+First GitHub slice implemented in the Android shell: accept a GitHub repository URL or owner/name, verify repository metadata, pin the default-branch commit, browse directories and preview text files; optionally authenticate with a fine-grained token encrypted by Android Keystore. The browser is read-only, while the first controlled write path supports a reviewed single-file replacement on a new branch, a pinned-base/blob-SHA check, an explicit commit action and a separate PR action. The first-use source compiled in CI run #109. The development package is now split into a side-by-side `.preview` variant so the earlier `.debug` installation and its data remain untouched. The Preview package requires the private persistent signing secrets documented in `docs/operations/preview-signing.md` before a trusted installer is produced; full device behavior still requires acceptance.
+
+Remaining intended scope: editable/exportable Project Passports; safe project file access; local Android toolchain/build execution; multi-file patch application, broader diff review, branch/history/check inspection, artifact retrieval and mission-engine integration; diagnostics, tests, cancellation and recovery; local/frontier provider adapters; capability-scoped Memo automation adapter; signing/artifacts; optional GitHub Actions execution and sync; additional project types only with evidence.
 
 Explicit non-goals:
 - No HTML, browser UI, web app or web control plane.

@@ -37,6 +37,72 @@ for contract in (
 ):
     assert contract in store, f"Local workspace store missing contract: {contract}"
 assert "No product features included." not in app
+
+local_inspector_path = Path("android/app/src/main/java/com/pocketforge/app/LocalProjectInspector.kt")
+assert local_inspector_path.is_file(), "Missing SAF-scoped local project inspector"
+local_inspector = local_inspector_path.read_text()
+for contract in (
+    "persistedUriPermissions", "buildChildDocumentsUriUsingTree",
+    "buildDocumentUriUsingTree", "detectProjectType", "MAX_DIRECTORY_ENTRIES",
+):
+    assert contract in local_inspector, f"Local project inspector missing contract: {contract}"
+for contract in (
+    "persistedUriPermissions.any", "inspectLocalProject", "showLocalProjectOverview",
+    "browseLocalDirectory", "normalizeGitHubRepositoryInput", "runBackgroundTask",
+):
+    assert contract in app, f"Native project onboarding missing contract: {contract}"
+assert "runGitHubRequest" not in app, "Obsolete GitHub-only background task label remains"
+assert "pinnedRevisionOrReconnect" in app, "GitHub browsing must require a pinned commit"
+assert "initialRepository: String? = null" in app, "GitHub reconnect should prefill the repository"
+assert "project.githubRevision ?: project.githubDefaultBranch" not in app, "GitHub browsing must not fall back to a moving branch"
+assert "sizeColumn < 0" in local_inspector, "Local inspection must tolerate providers without an optional size column"
+
+github_client_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubRepositoryClient.kt")
+github_vault_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubTokenVault.kt")
+assert github_client_path.is_file(), "Missing native GitHub repository adapter"
+assert github_vault_path.is_file(), "Missing encrypted GitHub token vault"
+github_client = github_client_path.read_text()
+github_vault = github_vault_path.read_text()
+for contract in (
+    "showConnectGitHubRepository", "browseGitHubPath", "showGitHubEditForm",
+    "buildReviewDiff", "createGitHubPullRequest",
+):
+    assert contract in app, f"Native GitHub workspace missing contract: {contract}"
+for contract in (
+    "fun getRepository(", "fun listContents(", "fun readTextFileWithSha(",
+    "fun createBranch(", "fun updateTextFile(", "fun createPullRequest(",
+    "currentSha != expectedBlobSha", "CodingErrorAction.REPORT",
+    "SHA_PATTERN.matches(sha)", "could not pin the default branch",
+):
+    assert contract in github_client, f"GitHub repository adapter missing contract: {contract}"
+for contract in (
+    "AndroidKeyStore", "AES/GCM/NoPadding", "SHA-256",
+    "preferenceKey(repository)", "fun clear(repository: String)",
+):
+    assert contract in github_vault, f"GitHub credential vault missing security contract: {contract}"
+for contract in ("SOURCE_GITHUB", "githubRepository", "githubDefaultBranch", "githubRevision"):
+    assert contract in store, f"Workspace source model missing GitHub field: {contract}"
+ffi_manifest = Path("core/pocketforge-ffi/Cargo.toml").read_text()
+core_manifest = Path("core/pocketforge-core/Cargo.toml").read_text()
+deny_policy = Path("core/deny.toml").read_text()
+assert "publish = false" in ffi_manifest and "publish = false" in core_manifest, "Proprietary workspace crates must remain unpublished"
+assert 'version = "0.1.0", path = "../pocketforge-core"' in ffi_manifest, "Internal path dependency must have an explicit version"
+assert "private = { ignore = true }" in deny_policy, "License checks must ignore only unpublished private workspace members"
+
+security_workflow = Path(".github/workflows/security.yml").read_text()
+assert "run: cargo audit" in security_workflow, "Use cargo-audit's supported command syntax"
+assert "cargo audit --locked" not in security_workflow, "cargo-audit does not accept Cargo's --locked flag"
+
+android_build = Path("android/app/build.gradle.kts").read_text()
+preview_manifest_path = Path("android/app/src/debug/AndroidManifest.xml")
+assert 'applicationIdSuffix = ".preview"' in android_build, "Preview must install alongside the earlier debug package"
+assert "previewStoreFile" in android_build and 'signingConfigs.getByName("preview")' in android_build, "Preview needs configurable persistent signing"
+assert 'storeType = "PKCS12"' in android_build, "Preview keystore format must be explicit"
+assert preview_manifest_path.is_file() and "PocketForge Preview" in preview_manifest_path.read_text(), "Preview app label must be distinguishable"
+gitignore = Path(".gitignore").read_text()
+assert "*.p12" in gitignore and "*.jks" in gitignore, "Private signing keystores must be ignored"
+manifest = Path("android/app/src/main/AndroidManifest.xml").read_text()
+assert "android.permission.INTERNET" in manifest, "GitHub API requires INTERNET permission"
 assert r"\${" not in app, "Kotlin interpolation is accidentally escaped"
 assert r"\\n" not in app, "Kotlin dialog newlines are double-escaped"
 
@@ -45,6 +111,9 @@ for contract in (
     "pull_request:", "push:", "branches: [main]", "workflow_dispatch:",
     "scripts/verify-foundation.sh", "scripts/build-rust.sh",
     "cargo +1.82.0 test", "assembleDebug", "apksigner",
+    "POCKETFORGE_DEBUG_KEYSTORE_BASE64", "POCKETFORGE_DEBUG_KEYSTORE_PASSWORD",
+    "POCKETFORGE_DEBUG_KEY_ALIAS", "POCKETFORGE_DEBUG_KEY_PASSWORD",
+    "Remove Preview signing material", "Prepare persistent Preview signing key",
     "sbom-action", "attest-build-provenance", "upload-artifact",
 ):
     assert contract in pipeline, f"Direct CI pipeline missing contract: {contract}"
