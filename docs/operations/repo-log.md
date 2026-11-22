@@ -164,3 +164,17 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Static cargo-deny/cargo-audit validation remains queued.
 
 - CI now runs `gradle :app:compileDebugKotlin` before the persistent-signing-secret gate. This separates Kotlin compilation feedback from trusted APK signing, so missing release credentials no longer hide source compile errors. Validation of this new step is pending.
+
+
+## Latest CI validation — 2026-11-22 (commit f105799)
+
+- Source commit: `f1057999346bc8f72a3dd08bf5dae13dfdca3e64`.
+- Successful PR pipeline run: https://github.com/ysfclc/PocketForge/actions/runs/45062059882. Foundation verifier passed; Rust cross-compilation for arm64-v8a, armeabi-v7a and x86_64 passed; Rust tests and Clippy passed; `:app:compileDebugKotlin` passed; Android Preview APK assembly and APK v2 signature verification passed.
+- Kotlin emitted deprecation warnings for legacy Android UI APIs and one unchecked cast; no compilation errors.
+- APK package `com.pocketforge.app.preview`, version `0.1.0-keystone-preview`, versionCode 1, target API 35. APK SHA-256: `429e86ee7b57a04174cc075679d0db95f8e0eb7a1e2395b889b7817a1a237b0c`.
+- APK artifact ID 14770361593 (artifact ZIP digest `65d81abcd452800c5a8ce325ea35fd46e98dbddb68c416179d3b090cc3344859`). The artifact contains the APK and CycloneDX SBOM. Separate SBOM artifact ID 14769827121.
+- Important signing limitation: this was a fork-PR build and the four private Preview signing secrets were unavailable. CI explicitly used the runner's temporary Android debug key; signer certificate SHA-256 is `aba48d750ef6efb3d8f003b12844997d0053c060ee4e257b905cd1aebeae347b`. This APK is signature-valid but is NOT update-safe for later builds and must not be presented as the persistent Preview signer.
+- Build provenance attestation was created and uploaded: https://github.com/ysfclc/PocketForge/attestations/70830650.
+- Successful supply-chain security run: https://github.com/ysfclc/PocketForge/actions/runs/45062059829. actionlint, foundation verification, cargo-deny policy checks and cargo-audit all passed.
+- The matching push pipeline run 45062056610 failed only at persistent signing-key preparation because the four `POCKETFORGE_DEBUG_*` secrets are missing; Rust and Kotlin compilation had already passed. The PR run used the explicit fork-PR temporary-key fallback.
+- No physical-device installation/acceptance is claimed. Imported-project build execution, local toolchain provisioning and process supervision remain unimplemented. PR #2 remains open, draft and unmerged.
