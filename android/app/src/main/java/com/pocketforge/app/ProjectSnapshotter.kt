@@ -67,10 +67,10 @@ class ProjectSnapshotter(
         val staging = File(parent, ".$id.partial")
         val destination = File(parent, id)
         check(staging.mkdir()) { "Cannot create snapshot staging directory." }
-        val sourceIdentity = readSourceIdentity(treeUri, rootId)
         val progress = Progress()
         val skipped = mutableListOf<String>()
         try {
+            val sourceIdentity = readSourceIdentity(treeUri, rootId)
             copyDirectory(treeUri, rootId, staging, "", 0, progress, skipped, isCancelled, onProgress)
             check(!isCancelled()) { throw SnapshotCancelledException() }
             val manifest = JSONObject().apply {
