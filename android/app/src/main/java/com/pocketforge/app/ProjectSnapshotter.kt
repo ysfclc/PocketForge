@@ -51,7 +51,6 @@ class ProjectSnapshotter(
     ): ProjectSnapshot {
         requireReadPermission(treeUri)
         val rootId = DocumentsContract.getTreeDocumentId(treeUri)
-        val rootName = queryDisplayName(treeUri, rootId) ?: "project"
         val id = UUID.randomUUID().toString()
         val parent = File(context.filesDir, SNAPSHOT_DIRECTORY)
         check(parent.exists() || parent.mkdirs()) { "Cannot create private snapshot storage." }
@@ -154,6 +153,9 @@ class ProjectSnapshotter(
             val nameColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
             val mimeColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
             while (cursor.moveToNext()) {
+                if (result.size >= limits.maxEntries) {
+                    throw IllegalStateException("Snapshot entry limit exceeded.")
+                }
                 result += Node(
                     cursor.getString(idColumn),
                     cursor.getString(nameColumn) ?: "Unnamed item",
@@ -162,14 +164,6 @@ class ProjectSnapshotter(
             }
         } ?: throw IllegalStateException("Android could not read a project directory.")
         return result
-    }
-
-    private fun queryDisplayName(treeUri: Uri, documentId: String): String? {
-        val uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
-        val projection = arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-        return context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) cursor.getString(0) else null
-        }
     }
 
     private fun requireReadPermission(treeUri: Uri) {
