@@ -140,3 +140,12 @@ The new connector source and static contract checks were committed to the featur
 - Android CI and runtime tests are pending. No APK/device acceptance is claimed.
 
 - CI concurrency now cancels superseded validation for the same ref, preventing every rapid commit from leaving a long queue of obsolete Android/security builds. Only the latest revision is intended to consume the full validation slot.
+
+
+## Latest hosted validation result — 2026-11-22
+
+- On branch commit `da900373d1ea23d9b5d6ab71d7d1731badab9c6d`, hosted runner diagnostic passed and the foundation contract verifier passed.
+- Rust core compilation for all configured Android ABIs passed, and Rust tests/lint checks passed.
+- The Android APK pipeline stopped at **Prepare persistent Preview signing key** because the four `POCKETFORGE_DEBUG_*` Actions secrets are not configured. APK assembly and signature verification were skipped. No APK was produced by this run and no Kotlin/Gradle Android compilation is claimed.
+- The separate static security job is still queued; cargo-deny/cargo-audit results are not yet available.
+- Required release gate: configure the four persistent signing secrets in GitHub Actions, then rerun the pipeline. Do not substitute an ephemeral signing key for a trusted updateable Preview APK.
