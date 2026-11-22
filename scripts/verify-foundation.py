@@ -71,6 +71,9 @@ assert "ProcessBuilder" not in build_preflight and "Runtime.getRuntime" not in b
 
 # Build-root scoring must use actual Android manifest evidence, not treat the
 # empty repository root as Android merely because it is a candidate.
+preflight_source = build_preflight
+assert 'if (candidateRoot.isEmpty()) it.isNotBlank() else it == candidateRoot || it.startsWith("$candidateRoot/")' in preflight_source, "Kotlin manifest scoring must explicitly guard empty root"
+assert 'if (candidateRoot.isEmpty()) true else it == candidateRoot || it.startsWith("$candidateRoot/")' not in preflight_source, "Empty candidate root must not match every manifest"
 def preflight_root_score(candidate_root, manifest_paths, wrapper_roots, root_build_roots, settings_roots):
     has_manifest = any(
         (path.startswith(candidate_root + "/") or path == candidate_root)
