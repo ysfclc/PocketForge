@@ -18,7 +18,11 @@ data class ProjectSnapshot(
     val skippedEntries: List<String>,
     val manifestFile: File,
     val manifestSha256: String,
-    val createdAt: Long
+    val createdAt: Long,
+    val sourceUriSha256: String,
+    val sourceRootIdSha256: String,
+    val sourceDisplayName: String,
+    val sourceLastModified: Long?
 )
 
 data class SnapshotLimits(
@@ -63,6 +67,7 @@ class ProjectSnapshotter(
         val staging = File(parent, ".$id.partial")
         val destination = File(parent, id)
         check(staging.mkdir()) { "Cannot create snapshot staging directory." }
+        val sourceIdentity = readSourceIdentity(treeUri, rootId)
         val progress = Progress()
         val skipped = mutableListOf<String>()
         try {
@@ -72,6 +77,13 @@ class ProjectSnapshotter(
                 put("schemaVersion", 1)
                 put("snapshotId", id)
                 put("createdAt", System.currentTimeMillis())
+                put("sourceIdentity", JSONObject().apply {
+                    put("treeUriSha256", sourceIdentity.treeUriSha256)
+                    put("rootDocumentIdSha256", sourceIdentity.rootDocumentIdSha256)
+                    put("displayName", sourceIdentity.displayName)
+                    if (sourceIdentity.lastModified == null) put("lastModified", JSONObject.NULL)
+                    else put("lastModified", sourceIdentity.lastModified)
+                })
                 put("fileCount", progress.files)
                 put("totalBytes", progress.bytes)
                 put("skippedEntries", JSONArray(skipped))
@@ -93,7 +105,12 @@ class ProjectSnapshotter(
             }
             val manifestSha = sha256(manifestBytes)
             check(staging.renameTo(destination)) { "Could not finalize project snapshot." }
-            return ProjectSnapshot(id, destination, progress.files, progress.bytes, skipped.toList(), File(destination, MANIFEST_NAME), manifestSha, System.currentTimeMillis())
+            return ProjectSnapshot(
+                id, destination, progress.files, progress.bytes, skipped.toList(),
+                File(destination, MANIFEST_NAME), manifestSha, System.currentTimeMillis(),
+                sourceIdentity.treeUriSha256, sourceIdentity.rootDocumentIdSha256,
+                sourceIdentity.displayName, sourceIdentity.lastModified
+            )
         } catch (error: Throwable) {
             staging.deleteRecursively()
             destination.deleteRecursively()
@@ -198,6 +215,39 @@ class ProjectSnapshotter(
             }
         } ?: throw IllegalStateException("Android could not read a project directory.")
         return result
+    }
+
+    private data class SourceIdentity(
+        val treeUriSha256: String,
+        val rootDocumentIdSha256: String,
+        val displayName: String,
+        val lastModified: Long?
+    )
+
+    private fun readSourceIdentity(treeUri: Uri, rootId: String): SourceIdentity {
+        val documentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, rootId)
+        var displayName = "Linked project folder"
+        var lastModified: Long? = null
+        val projection = arrayOf(
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED
+        )
+        context.contentResolver.query(documentUri, projection, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+                val modifiedIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+                if (nameIndex >= 0) displayName = cursor.getString(nameIndex) ?: displayName
+                if (modifiedIndex >= 0 && !cursor.isNull(modifiedIndex)) {
+                    lastModified = cursor.getLong(modifiedIndex).takeIf { it > 0L }
+                }
+            }
+        }
+        return SourceIdentity(
+            treeUriSha256 = sha256(treeUri.toString().toByteArray(Charsets.UTF_8)),
+            rootDocumentIdSha256 = sha256(rootId.toByteArray(Charsets.UTF_8)),
+            displayName = displayName,
+            lastModified = lastModified
+        )
     }
 
     private fun requireReadPermission(treeUri: Uri) {
