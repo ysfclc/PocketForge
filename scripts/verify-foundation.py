@@ -78,8 +78,8 @@ for contract in (
     "QUEUED", "PREPARING", "RUNNING", "CANCELLING", "SUCCEEDED",
     "FAILED", "CANCELLED", "INTERRUPTED", "Illegal build transition",
     "outputArtifacts", "logReference", "failureReason", "commit()",
-    "snapshotId", "manifestSha256", "sourceUriSha256", "sourceLastModified",
-    "snapshot: StoredProjectSnapshot?", "snapshot.projectId == projectId",
+    "snapshotId", "manifestSha256", "sourceUriSha256", "sourceRootIdSha256", "sourceLastModified",
+    "snapshot: StoredProjectSnapshot?", "snapshot.projectId == projectId", "snapshot.sourceRootIdSha256.matches(hashPattern)",
 ):
     assert contract in build_run_store, f"Build-run persistence missing contract: {contract}"
 assert "ProcessBuilder" not in build_run_store and "Runtime.getRuntime" not in build_run_store, "Build-run store must not execute project code"
