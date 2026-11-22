@@ -63,7 +63,7 @@ build_preflight = build_preflight_path.read_text()
 for contract in (
     "persistedUriPermissions", "MAX_DEPTH", "MAX_ENTRIES", "MAX_TEXT_BYTES",
     "gradle-wrapper.properties", "gradle-wrapper.jar", "com.android.application",
-    "AndroidManifest.xml", "Cargo.toml", "distributionUrl",
+    "AndroidManifest.xml", "cargo.toml", "distributionUrl",
     "never copies, edits, executes or uploads",
 ):
     assert contract in build_preflight, f"Build preflight missing safety/detection contract: {contract}"
