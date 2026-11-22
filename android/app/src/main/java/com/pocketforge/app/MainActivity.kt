@@ -478,9 +478,8 @@ class MainActivity : Activity() {
         val progress = ProgressDialog(this).apply {
             setTitle("Preparing project snapshot")
             setMessage("Copying into PocketForge private storage…")
-            setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-            max = 100
             setCancelable(true)
+            setIndeterminate(true)
             setOnCancelListener { cancelled.set(true) }
             show()
         }
