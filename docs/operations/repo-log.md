@@ -133,3 +133,5 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Persisted source provenance in `StoredProjectSnapshot` and added optional immutable snapshot provenance to `BuildRun` creation. Snapshot/project mismatch is rejected; legacy records deserialize with absent provenance.
 - Added source-provenance assertions to the foundation verifier and documented limitations: provider last-modified metadata is optional and fingerprints are not a complete source revision proof.
 - Awaiting Android CI compilation and device tests. No build executor or APK is claimed.
+
+- Follow-up hardening: moved source metadata lookup inside the snapshot staging cleanup boundary, so a provider metadata-query failure also removes the partial directory. BuildRun provenance now retains and requires both source URI and root-document fingerprints.
