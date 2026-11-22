@@ -69,6 +69,19 @@ for contract in (
     assert contract in build_preflight, f"Build preflight missing safety/detection contract: {contract}"
 assert "ProcessBuilder" not in build_preflight and "Runtime.getRuntime" not in build_preflight, "Preflight must never execute imported project code"
 
+build_run_store_path = Path("android/app/src/main/java/com/pocketforge/app/BuildRunStore.kt")
+assert build_run_store_path.is_file(), "Missing persisted build-run lifecycle store"
+build_run_store = build_run_store_path.read_text()
+for contract in (
+    "data class BuildRun", "class BuildRunStore", "fun create(", "fun transition(",
+    "fun all()", "fun get(id: String)", "pocketforge.build-runs.v1",
+    "QUEUED", "PREPARING", "RUNNING", "CANCELLING", "SUCCEEDED",
+    "FAILED", "CANCELLED", "INTERRUPTED", "Illegal build transition",
+    "outputArtifacts", "logReference", "failureReason", "commit()",
+):
+    assert contract in build_run_store, f"Build-run persistence missing contract: {contract}"
+assert "ProcessBuilder" not in build_run_store and "Runtime.getRuntime" not in build_run_store, "Build-run store must not execute project code"
+
 # Build-root scoring must use actual Android manifest evidence, not treat the
 # empty repository root as Android merely because it is a candidate.
 preflight_source = build_preflight
