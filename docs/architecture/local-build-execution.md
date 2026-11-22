@@ -4,7 +4,7 @@
 
 A linked local project must be buildable on the Android device without requiring a GitHub account, hosted CI runner, Memo, or a second-party build service. GitHub Actions may be offered as an optional remote executor, but it is never presented as the local build path.
 
-The current Android application only links and inspects project folders and performs a read-only build preflight. It does not yet execute imported-project build scripts. This document defines the next implementation gate; it is not evidence that a runner already exists.
+The current Android application links and inspects project folders, performs a read-only build preflight, persists build lifecycle records, and now contains a bounded SAF-to-app-private snapshot preparation component. Snapshot preparation is not yet exposed in the UI or connected to a build executor. Imported-project build scripts are not executed.
 
 ## Execution boundary
 
@@ -13,6 +13,14 @@ The current Android application only links and inspects project folders and perf
 3. **Treat build logic as code.** Gradle settings, plugins, build scripts, wrapper JARs and compiler plugins can execute arbitrary code. Preflight is read-only and never invokes them. A build requires an explicit user action with the project, task, variant, toolchain, network access and expected output shown.
 4. **Keep the runner local.** The required executor and build outputs live on the device. Termux may be explored as an optional adapter, but installing Termux or another app must not be a prerequisite for the PocketForge local factory.
 5. **No hidden remote fallback.** If the local toolchain is absent or the device cannot safely run the build, report the exact blocker. Never silently send source to GitHub Actions or another remote service.
+
+## Snapshot preparation component
+
+`ProjectSnapshotter` implements the source-to-private-workspace copy boundary. It requires the persisted read grant for the selected SAF tree, writes only under the app-private `filesDir/build-workspaces` directory, and stages into a unique partial directory before renaming it into a completed snapshot. A failed or cancelled copy removes its partial output.
+
+The default policy caps a snapshot at 10,000 entries, depth 32, 512 MiB total and 64 MiB per file. It excludes VCS and generated/cache directories (`.git`, `.gradle`, `build`, `.idea`, `.kotlin`, `node_modules`), rejects unsafe names and duplicate sibling names, checks cancellation during traversal and streaming, and reports copied-file/byte progress. It never writes to the selected source and never invokes project code. These are defensive copy limits, not a complete filesystem sandbox; a future executor must still validate its own inputs and outputs.
+
+The component is currently a callable foundation, not an end-user flow: no screen starts a snapshot, no manifest/hash is recorded yet, and no build executor consumes the returned directory. The next integration must bind snapshot creation to an explicit build approval and persist source identity plus a content manifest before execution.
 
 ## Toolchain provider
 
