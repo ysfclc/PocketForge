@@ -47,7 +47,8 @@ class ProjectSnapshotter(
         val isDirectory: Boolean get() = mime == DocumentsContract.Document.MIME_TYPE_DIR
     }
 
-    private data class FileRecord(val path: String, val bytes: Long, val sha256: String)\n    private data class Progress(var entries: Int = 0, var files: Int = 0, var bytes: Long = 0, val records: MutableList<FileRecord> = mutableListOf())
+    private data class FileRecord(val path: String, val bytes: Long, val sha256: String) 
+    private data class Progress(var entries: Int = 0, var files: Int = 0, var bytes: Long = 0, val records: MutableList<FileRecord> = mutableListOf())
 
     fun create(
         treeUri: Uri,
@@ -151,6 +152,7 @@ class ProjectSnapshotter(
         input.use { source ->
             FileOutputStream(target).use { output ->
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                val digest = MessageDigest.getInstance("SHA-256")
                 var fileBytes = 0L
                 while (true) {
                     check(!isCancelled()) { throw SnapshotCancelledException() }
@@ -160,11 +162,13 @@ class ProjectSnapshotter(
                     if (fileBytes > limits.maxFileBytes) throw IllegalStateException("File exceeds snapshot limit: $path")
                     if (progress.bytes + count > limits.maxTotalBytes) throw IllegalStateException("Snapshot exceeds total size limit.")
                     output.write(buffer, 0, count)
+                    digest.update(buffer, 0, count)
                     progress.bytes += count
                 }
                 output.fd.sync()
                 progress.files++
-                progress.records += FileRecord(path, fileBytes, sha256(target.readBytes()))
+                val fileHash = digest.digest().joinToString("") { "%02x".format(it) }
+                progress.records += FileRecord(path, fileBytes, fileHash)
             }
         }
     }
@@ -202,7 +206,10 @@ class ProjectSnapshotter(
         if (!allowed) throw SecurityException("Folder access expired. Re-link this project before snapshotting it.")
     }
 
-    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")\n        .digest(bytes).joinToString("") { "%02x".format(it) }\n\n    private fun safeName(raw: String): String {
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256") 
+        .digest(bytes).joinToString("") { "%02x".format(it) } 
+ 
+    private fun safeName(raw: String): String {
         val name = raw.trim()
         require(name.isNotEmpty() && name != "." && name != "..") { "Invalid source entry name." }
         require('/' !in name && '\\' !in name && !name.contains('\u0000')) { "Unsafe source entry name." }
@@ -210,7 +217,8 @@ class ProjectSnapshotter(
     }
 
     companion object {
-        private const val SNAPSHOT_DIRECTORY = "build-workspaces"\n        private const val MANIFEST_NAME = "snapshot-manifest.json"
+        private const val SNAPSHOT_DIRECTORY = "build-workspaces" 
+        private const val MANIFEST_NAME = "snapshot-manifest.json"
         private val EXCLUDED_DIRECTORIES = setOf(".git", ".gradle", "build", ".idea", ".kotlin", "node_modules")
     }
 }
