@@ -80,6 +80,8 @@ for contract in (
     "outputArtifacts", "logReference", "failureReason", "commit()",
     "snapshotId", "manifestSha256", "sourceUriSha256", "sourceRootIdSha256", "sourceLastModified",
     "snapshot: StoredProjectSnapshot?", "snapshot.projectId == projectId", "snapshot.sourceRootIdSha256.matches(hashPattern)",
+    "ProjectSnapshotVerifier(snapshotRoot).verify(", "expectedSourceUriSha256 = snapshot.sourceUriSha256",
+    "expectedSourceRootIdSha256 = snapshot.sourceRootIdSha256", "verification.valid",
 ):
     assert contract in build_run_store, f"Build-run persistence missing contract: {contract}"
 assert "ProcessBuilder" not in build_run_store and "Runtime.getRuntime" not in build_run_store, "Build-run store must not execute project code"
@@ -107,6 +109,7 @@ for contract in (
     "MessageDigest.getInstance(\"SHA-256\")", "isSafeRelativePath",
     "Snapshot contains missing or unlisted files", "target.length() == expectedBytes",
     "sourceIdentity", "treeUriSha256", "rootDocumentIdSha256",
+    "expectedSourceUriSha256", "expectedSourceRootIdSha256",
 ):
     assert contract in snapshot_verifier, f"Snapshot integrity verification contract missing: {contract}"
 assert "ProjectSnapshotVerifier(java.io.File(filesDir, \"build-workspaces\"))" in app, "Snapshot must be verified against the app-owned root"
