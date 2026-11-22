@@ -89,6 +89,15 @@ class ProjectSnapshotVerifier(
             }
             require(totalBytes == expectedTotalBytes) { "Verified file sizes do not match the snapshot total." }
 
+            val actualFiles = root.walkTopDown().filter { it.isFile }.map { file ->
+                val canonical = file.canonicalFile
+                require(canonical.path.startsWith(root.path + File.separator)) {
+                    "Snapshot contains a file outside its private directory."
+                }
+                canonical.relativeTo(root).invariantSeparatorsPath
+            }.filterNot { it == MANIFEST_NAME }.toSet()
+            require(actualFiles == seen) { "Snapshot contains missing or unlisted files." }
+
             SnapshotVerificationResult(true, entries.length(), totalBytes, manifestHash)
         } catch (error: Exception) {
             SnapshotVerificationResult(false, 0, 0, "", error.message ?: "Snapshot verification failed.")
