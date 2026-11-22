@@ -87,6 +87,8 @@ Every build is a persisted BuildRun with the following fields. The Android app n
 - Start/end timestamps, exit code, bounded stdout/stderr log references and failure classification.
 - Output artifact paths, SHA-256 hashes, package metadata and signing identity.
 
+Before a snapshot-bound run record is persisted, `BuildRunStore.create(..., snapshot)` rechecks that the snapshot directory is directly under the app-owned snapshot root and reruns full manifest/file verification against the stored snapshot ID, counts, byte total, manifest hash and both saved source fingerprints. It refuses to bind a missing, tampered, relocated or cross-project snapshot. This is still only a record-creation gate: no executor or UI currently invokes snapshot-bound run creation.
+
 The lifecycle must be idempotent. Process death or device restart marks an active run interrupted unless the executor can prove safe resumption. Never replay a build automatically after restart. Cancellation stops the process tree, records the outcome and cleans only that run's staging directory. Source files are never deleted or rewritten by cleanup.
 
 ## Resource and safety policy
