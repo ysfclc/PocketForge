@@ -95,12 +95,13 @@ object BuildPreflight {
             ?.substringAfter('=')
             ?.trim()
             ?.replace("\\:", ":")
-        val modules = moduleBuildFiles.map { it.substringBeforeLast('/') }
-            .filter { it.isNotBlank() }
+        val modules = moduleBuildFiles.filter { '/' in it }
+            .map { it.substringBeforeLast('/') }
             .distinct()
             .sorted()
 
         val isAndroid = manifests.isNotEmpty() || hasAndroidPlugin
+        val hasGradle = settings != null || rootBuild != null || moduleBuildFiles.isNotEmpty()
         val findings = mutableListOf<String>()
         val blockers = mutableListOf<String>()
         if (settings != null) findings += "Gradle settings found: $settings"
@@ -109,15 +110,17 @@ object BuildPreflight {
         if (manifests.isNotEmpty()) findings += "Android manifest(s): ${manifests.size}"
         if (hasAndroidPlugin) findings += "Android Gradle plugin declaration detected"
         if (hasRust) findings += "Cargo manifest detected; native Rust build steps may be required"
-        if (wrapperScript != null && wrapperJar != null && wrapperProperties != null) {
-            findings += "Complete Gradle wrapper files are present"
-        } else {
-            if (wrapperScript == null) blockers += "gradlew wrapper script is missing"
-            if (wrapperJar == null) blockers += "Gradle wrapper JAR is missing"
-            if (wrapperProperties == null) blockers += "gradle/wrapper/gradle-wrapper.properties is missing"
+        if (hasGradle) {
+            if (wrapperScript != null && wrapperJar != null && wrapperProperties != null) {
+                findings += "Complete Gradle wrapper files are present"
+            } else {
+                if (wrapperScript == null) blockers += "gradlew wrapper script is missing"
+                if (wrapperJar == null) blockers += "Gradle wrapper JAR is missing"
+                if (wrapperProperties == null) blockers += "gradle/wrapper/gradle-wrapper.properties is missing"
+            }
         }
         if (!isAndroid) blockers += "No Android Gradle plugin or AndroidManifest.xml was detected"
-        if (settings == null && rootBuild == null) blockers += "No Gradle settings or root build file was detected"
+        if (!hasGradle) blockers += "No Gradle settings or build file was detected"
         if (truncated) blockers += "Project scan reached its safety limit; nested modules may not have been inspected"
 
         val buildSystem = when {
