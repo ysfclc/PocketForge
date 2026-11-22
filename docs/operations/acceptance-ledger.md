@@ -7,6 +7,7 @@
 | Git-native direct commit pipeline | Authored; YAML parsed locally | `.github/workflows/pipeline.yml` |
 | Action SHA pins and per-job permissions | Static verification passed in local mirror | `scripts/verify-foundation.py` |
 | Native workspace / Project Passport / mission queue | Current PR-head source builds in CI run #109; first UI launch observed by user; improved folder inspection is compiled but not yet device-accepted | Run #109, commit `c0b829c`; verify folder permission survives restart and browse/open behavior on target phone |
+| Imported-project build preflight | Implemented in source; CI compilation and target-device SAF acceptance pending | `BuildPreflight.kt` performs a bounded, read-only SAF scan for Gradle wrapper/settings/modules, Android manifests/plugin markers and Cargo manifests; verify a real Android project report on device. This is not a build runner and executes no project code |
 | GitHub repository connection and browser | Current PR-head source builds in CI run #109; URL/owner-repo input, immediate project handoff and strict immutable commit pinning are compiled; not yet device-accepted | Run #109, commit `c0b829c`; verify public URL, private token, pinned SHA, directory navigation and text preview on device |
 | GitHub single-file branch/commit/PR flow | Source compiled in current PR-head CI run #109; still not device-tested | Device evidence required for branch SHA/base verification, stale-file rejection, commit and PR URLs, and no mutation without approval |
 | Advanced GitHub operations (multi-file patches, history/checks, artifact retrieval, mission integration) | Not implemented | scoped token grants, branch creation, base-revision checks, reviewed diff, explicit commit/PR approval and resulting GitHub evidence |
@@ -83,3 +84,12 @@ The new connector source and static contract checks were committed to the featur
 
 
 - Preview certificate fingerprint validated from the private PKCS12 bundle with `keytool`: `9D:89:C5:B3:3B:9D:B7:56:B6:00:84:22:8B:B9:58:98:12:C7:1F:D5:F7:56:2E:30:A7:D4:AB:39:06:D0:6D:5F`. This is the expected signer for every trusted Preview build after the four repository secrets are configured.
+
+
+## Imported-project build preflight — 2026-11-22
+
+- Added a read-only SAF scanner that requires the persisted folder read grant and caps traversal at five levels, 500 visited entries, 200 entries per directory and 128 KiB per inspected text file.
+- Detects Gradle settings/root/module build files, wrapper script/JAR/properties and configured Gradle distribution, Android manifests and Android Gradle plugin declarations, plus Cargo manifests.
+- The linked-folder overview now exposes **Assess build** and reports findings, structural blockers and scan truncation. The report explicitly says no source was executed, downloaded, changed or built.
+- This is project preflight only. An on-device Gradle/JDK/Android SDK executor, process isolation, cancellation, build logs, artifact verification and install flow remain unimplemented.
+- Source commits for this slice: `931ad6e`, `44d2eeb`, `0d43d65`, `a5f87f1`, `968909d`, `483faca`, `efc2133`, `0b0f443`, `ec819a1`, `42f8ae7`. The latest source still requires CI compilation and physical-device acceptance; do not mark this gate passed until both are verified.
