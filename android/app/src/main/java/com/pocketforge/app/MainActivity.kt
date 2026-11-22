@@ -486,6 +486,7 @@ class MainActivity : Activity() {
             append("PROJECT PREFLIGHT · READ ONLY\n\n")
             append("Detected: ${assessment.projectType}\n")
             append("Build system: ${assessment.buildSystem}\n")
+            append("Build root: ${assessment.buildRoot.ifBlank { \"selected folder\" }}\\n")
             append("Gradle wrapper: ${if (assessment.hasGradleWrapperScript && assessment.hasGradleWrapperJar && assessment.gradleDistribution != null) "complete" else "incomplete"}\n")
             assessment.gradleDistribution?.let { append("Gradle distribution: $it\n") }
             if (assessment.modules.isNotEmpty()) append("Modules: ${assessment.modules.joinToString()}\n")
