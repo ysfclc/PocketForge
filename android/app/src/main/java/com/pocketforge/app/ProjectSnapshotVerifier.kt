@@ -55,6 +55,17 @@ class ProjectSnapshotVerifier(
             val json = JSONObject(String(manifestBytes, Charsets.UTF_8))
             require(json.optInt("schemaVersion", -1) == 1) { "Unsupported snapshot manifest version." }
             require(json.optString("snapshotId") == expectedSnapshotId) { "Snapshot ID does not match its manifest." }
+            val sourceIdentity = json.optJSONObject("sourceIdentity")
+                ?: error("Snapshot source identity is missing.")
+            require(sourceIdentity.optString("treeUriSha256").matches(SHA256_PATTERN)) {
+                "Snapshot source URI fingerprint is invalid."
+            }
+            require(sourceIdentity.optString("rootDocumentIdSha256").matches(SHA256_PATTERN)) {
+                "Snapshot root identity fingerprint is invalid."
+            }
+            require(sourceIdentity.optString("displayName").isNotBlank()) {
+                "Snapshot source display name is missing."
+            }
             require(json.optInt("fileCount", -1) == expectedFileCount) { "Snapshot file count does not match its manifest." }
             require(json.optLong("totalBytes", -1L) == expectedTotalBytes) { "Snapshot size does not match its manifest." }
 
