@@ -119,3 +119,5 @@ The new connector source and static contract checks were committed to the featur
 - BuildRun records now optionally bind to a project-matched StoredProjectSnapshot and persist its snapshot ID, manifest SHA-256, source URI fingerprint and last-modified timestamp. Older records remain readable when these fields are absent.
 - Extended the foundation contract verifier and updated architecture/roadmap documentation.
 - Source and contract changes are committed. Kotlin compilation, CI execution, runtime manifest compatibility, and device validation remain pending. The build-run binding is a persistence capability; no UI or executor invokes it yet.
+
+- Follow-up hardening: moved source metadata lookup inside the snapshot staging cleanup boundary, so a provider metadata-query failure also removes the partial directory. BuildRun provenance now retains and requires both source URI and root-document fingerprints.
