@@ -464,12 +464,57 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this)
             .setTitle(project.name)
             .setMessage(message)
-            .setNegativeButton("Close", null)
-            .setNeutralButton("Assess build") { _, _ -> assessLocalProject(project) }
+            .setNegativeButton("Assess build") { _, _ -> assessLocalProject(project) }
+            .setNeutralButton("Prepare snapshot") { _, _ -> prepareProjectSnapshot(project) }
             .setPositiveButton("Browse files") { _, _ ->
                 browseLocalDirectory(project, snapshot.rootDocumentId, snapshot.rootName)
             }
             .show()
+    }
+
+    private fun prepareProjectSnapshot(project: WorkspaceProject) {
+        val treeUri = project.folderUri?.let { Uri.parse(it) } ?: return
+        val cancelled = java.util.concurrent.atomic.AtomicBoolean(false)
+        val progress = ProgressDialog(this).apply {
+            setTitle("Preparing project snapshot")
+            setMessage("Copying into PocketForge private storage…")
+            setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+            max = 100
+            setCancelable(true)
+            setOnCancelListener { cancelled.set(true) }
+            show()
+        }
+        Thread {
+            val result = runCatching {
+                ProjectSnapshotter(this).create(treeUri, { cancelled.get() }) { files, bytes ->
+                    runOnUiThread {
+                        if (!isFinishing && !isDestroyed) {
+                            progress.setMessage("$files files · ${formatBytes(bytes)} copied")
+                        }
+                    }
+                }
+            }
+            runOnUiThread {
+                progress.dismiss()
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                result.onSuccess { prepared ->
+                    AlertDialog.Builder(this)
+                        .setTitle("Snapshot ready")
+                        .setMessage(
+                            "PROJECT · ${project.name}\n\nFiles: ${prepared.fileCount}\nSize: ${formatBytes(prepared.totalBytes)}\nSkipped directories: ${prepared.skippedEntries.size}\n\nPrivate workspace: ${prepared.directory.absolutePath}\nManifest: ${prepared.manifestFile.name}\nManifest SHA-256: ${prepared.manifestSha256}\n\nThis snapshot is prepared only. No build scripts have been executed."
+                        )
+                        .setPositiveButton("OK", null)
+                        .show()
+                }.onFailure { error ->
+                    val title = if (error is SnapshotCancelledException || cancelled.get()) "Snapshot cancelled" else "Snapshot preparation failed"
+                    AlertDialog.Builder(this)
+                        .setTitle(title)
+                        .setMessage(error.message ?: "Unable to prepare this project.")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            }
+        }.start()
     }
 
     private fun assessLocalProject(project: WorkspaceProject) {
