@@ -162,3 +162,5 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Android APK pipeline stopped at persistent Preview signing-key preparation because repository Actions secrets `POCKETFORGE_DEBUG_KEYSTORE_BASE64`, `POCKETFORGE_DEBUG_KEYSTORE_PASSWORD`, `POCKETFORGE_DEBUG_KEY_ALIAS`, and `POCKETFORGE_DEBUG_KEY_PASSWORD` are missing. Gradle Android assembly was not reached; no APK artifact was generated.
 - Do not weaken signing or use a new ephemeral key for an updateable Preview artifact. Configure the persistent signing secrets before rerunning the trusted APK pipeline.
 - Static cargo-deny/cargo-audit validation remains queued.
+
+- CI now runs `gradle :app:compileDebugKotlin` before the persistent-signing-secret gate. This separates Kotlin compilation feedback from trusted APK signing, so missing release credentials no longer hide source compile errors. Validation of this new step is pending.
