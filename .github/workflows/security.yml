@@ -8,6 +8,8 @@ on:
 permissions:
   contents: read
 
+# GitHub's native Dependency Review action is unavailable until repository dependency-graph support is enabled.
+# cargo-deny and cargo-audit remain the active dependency policy gates.
 jobs:
   static:
     name: Action, repository and Rust dependency policy
