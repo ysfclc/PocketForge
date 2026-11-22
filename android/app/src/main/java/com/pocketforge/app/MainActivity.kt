@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.text.InputType
 import android.os.Bundle
 import android.view.Gravity
@@ -503,7 +504,8 @@ class MainActivity : Activity() {
             .setNegativeButton("Close", null)
             .setNeutralButton("Create mission") { _, _ -> createMissionForProject(project) }
             .setPositiveButton("Browse project") { _, _ ->
-                val rootId = runCatching { DocumentsContract.getTreeDocumentId(Uri.parse(project.folderUri)) }.getOrNull()
+                val treeUri = project.folderUri?.let { Uri.parse(it) }
+                val rootId = treeUri?.let { runCatching { DocumentsContract.getTreeDocumentId(it) }.getOrNull() }
                 if (rootId != null) browseLocalDirectory(project, rootId, project.name)
             }
             .show()
