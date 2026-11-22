@@ -143,3 +143,11 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Retrieved CI logs. `actionlint` passed; the foundation verifier was stale against the intentional governance branch push trigger and newly added runner workflow. Updated its workflow expectations and added a guard assertion for the private-repository Dependency Review limitation.
 - GitHub Dependency Review itself failed because this private repository lacks the required Advanced Security/dependency graph support. Conditioned the optional review job on public repositories; cargo-deny/cargo-audit static checks remain unaffected.
 - Initial Android pipeline run stopped at the same stale foundation assertion before Rust/Gradle compilation. Awaiting validation of the repaired verifier and the latest Kotlin source.
+
+
+## 2026-11-22 — Revalidate snapshot at run binding
+
+- Strengthened `ProjectSnapshotVerifier` to compare manifest source fingerprints to the values in the saved snapshot record.
+- Updated the preparation path to supply the captured fingerprints.
+- Strengthened `BuildRunStore.create` so an optional snapshot-bound run is persisted only after canonical path containment and a complete second verification of the manifest, files and source identity. Cross-project, relocated and tampered snapshots are rejected.
+- Updated foundation contract checks, architecture and roadmap. Build-run creation remains unconnected to UI/execution pending the actual local runner design.
