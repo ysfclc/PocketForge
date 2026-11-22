@@ -35,6 +35,7 @@ object BuildPreflight {
     private data class Node(val id: String, val name: String, val mime: String) {
         val directory: Boolean get() = mime == DocumentsContract.Document.MIME_TYPE_DIR
     }
+    private data class Listing(val entries: List<Node>, val truncated: Boolean)
 
     fun assess(context: Context, treeUri: Uri): BuildAssessment {
         requirePersistedReadPermission(context, treeUri)
@@ -49,8 +50,9 @@ object BuildPreflight {
                 truncated = true
                 return
             }
-            val entries = children(context, treeUri, parentId)
-            for (node in entries) {
+            val listing = children(context, treeUri, parentId)
+            if (listing.truncated) truncated = true
+            for (node in listing.entries) {
                 if (visited >= MAX_ENTRIES) {
                     truncated = true
                     return
@@ -66,7 +68,8 @@ object BuildPreflight {
         walk(rootId, "", 0)
 
         val names = files.keys.map { it.lowercase() }.toSet()
-        val rootNames = root.map { it.name }
+        val rootNames = root.entries.map { it.name }
+        if (root.truncated) truncated = true
         val settings = findPath(files.keys, "settings.gradle", "settings.gradle.kts")
         val rootBuild = findPath(files.keys, "build.gradle", "build.gradle.kts")
         val wrapperProperties = files.keys.firstOrNull { it.equals("gradle/wrapper/gradle-wrapper.properties", true) }
@@ -148,7 +151,7 @@ object BuildPreflight {
         if (!allowed) throw SecurityException("Folder access expired. Re-link this project before assessing it.")
     }
 
-    private fun children(context: Context, treeUri: Uri, parentId: String): List<Node> {
+    private fun children(context: Context, treeUri: Uri, parentId: String): Listing {
         val uri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentId)
         val projection = arrayOf(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
@@ -160,15 +163,16 @@ object BuildPreflight {
             val id = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
             val name = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
             val mime = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
-            while (cursor.moveToNext()) {
+            while (cursor.moveToNext() && result.size < 200) {
                 result += Node(
                     cursor.getString(id),
                     cursor.getString(name) ?: "Unnamed item",
                     cursor.getString(mime) ?: "application/octet-stream"
                 )
             }
+            wasTruncated = cursor.count > result.size
         } ?: throw IllegalStateException("Android could not read a project directory.")
-        return result
+        return Listing(result, wasTruncated)
     }
 
     private fun readText(context: Context, treeUri: Uri, documentId: String?): String? {
