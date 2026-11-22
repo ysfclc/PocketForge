@@ -86,11 +86,12 @@ class ProjectSnapshotter(
                 })
             }
             val manifestFile = File(staging, MANIFEST_NAME)
+            val manifestBytes = manifest.toString(2).toByteArray(Charsets.UTF_8)
             FileOutputStream(manifestFile).use { output ->
-                output.write(manifest.toString(2).toByteArray(Charsets.UTF_8))
+                output.write(manifestBytes)
                 output.fd.sync()
             }
-            val manifestSha = sha256(manifest.toString().toByteArray(Charsets.UTF_8))
+            val manifestSha = sha256(manifestBytes)
             check(staging.renameTo(destination)) { "Could not finalize project snapshot." }
             return ProjectSnapshot(id, destination, progress.files, progress.bytes, skipped.toList(), File(destination, MANIFEST_NAME), manifestSha, System.currentTimeMillis())
         } catch (error: Throwable) {
