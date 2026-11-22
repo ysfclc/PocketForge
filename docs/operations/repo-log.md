@@ -117,3 +117,10 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Integrated verification on the snapshot worker thread before the snapshot is indexed. Invalid snapshots are deleted; the success dialog explicitly reports the verified file count and bytes.
 - Extended the foundation verifier and updated the local-build architecture and roadmap.
 - Verification remains source-level only until CI compiles the Kotlin changes and the target Android device exercises both successful verification and deliberate file/manifest tampering. No imported-project build executor is claimed.
+
+
+## 2026-11-22 — Governance branch CI coverage
+
+- Added push triggers for `governance/mission-execution-invariants-2026-11-20` to the Android build pipeline, static security workflow and minimal hosted-runner diagnostic.
+- The change closes a workflow-observability gap: commits on this working branch now trigger validation without relying on pull-request association or manual dispatch.
+- Awaiting GitHub Actions run results for the snapshot integrity verifier and current Android source.
