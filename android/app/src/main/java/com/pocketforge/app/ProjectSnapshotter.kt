@@ -6,6 +6,9 @@ import android.provider.DocumentsContract
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+import java.security.MessageDigest
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class ProjectSnapshot(
     val id: String,
@@ -13,6 +16,8 @@ data class ProjectSnapshot(
     val fileCount: Int,
     val totalBytes: Long,
     val skippedEntries: List<String>,
+    val manifestFile: File,
+    val manifestSha256: String,
     val createdAt: Long
 )
 
@@ -42,7 +47,7 @@ class ProjectSnapshotter(
         val isDirectory: Boolean get() = mime == DocumentsContract.Document.MIME_TYPE_DIR
     }
 
-    private data class Progress(var entries: Int = 0, var files: Int = 0, var bytes: Long = 0)
+    private data class FileRecord(val path: String, val bytes: Long, val sha256: String)\n    private data class Progress(var entries: Int = 0, var files: Int = 0, var bytes: Long = 0, val records: MutableList<FileRecord> = mutableListOf())
 
     fun create(
         treeUri: Uri,
@@ -62,8 +67,31 @@ class ProjectSnapshotter(
         try {
             copyDirectory(treeUri, rootId, staging, "", 0, progress, skipped, isCancelled, onProgress)
             check(!isCancelled()) { throw SnapshotCancelledException() }
+            val manifest = JSONObject().apply {
+                put("schemaVersion", 1)
+                put("snapshotId", id)
+                put("createdAt", System.currentTimeMillis())
+                put("fileCount", progress.files)
+                put("totalBytes", progress.bytes)
+                put("skippedEntries", JSONArray(skipped))
+                put("files", JSONArray().apply {
+                    progress.records.sortedBy { it.path }.forEach { record ->
+                        put(JSONObject().apply {
+                            put("path", record.path)
+                            put("bytes", record.bytes)
+                            put("sha256", record.sha256)
+                        })
+                    }
+                })
+            }
+            val manifestFile = File(staging, MANIFEST_NAME)
+            FileOutputStream(manifestFile).use { output ->
+                output.write(manifest.toString(2).toByteArray(Charsets.UTF_8))
+                output.fd.sync()
+            }
+            val manifestSha = sha256(manifest.toString().toByteArray(Charsets.UTF_8))
             check(staging.renameTo(destination)) { "Could not finalize project snapshot." }
-            return ProjectSnapshot(id, destination, progress.files, progress.bytes, skipped.toList(), System.currentTimeMillis())
+            return ProjectSnapshot(id, destination, progress.files, progress.bytes, skipped.toList(), File(destination, MANIFEST_NAME), manifestSha, System.currentTimeMillis())
         } catch (error: Throwable) {
             staging.deleteRecursively()
             destination.deleteRecursively()
@@ -136,6 +164,7 @@ class ProjectSnapshotter(
                 }
                 output.fd.sync()
                 progress.files++
+                progress.records += FileRecord(path, fileBytes, sha256(target.readBytes()))
             }
         }
     }
@@ -173,7 +202,7 @@ class ProjectSnapshotter(
         if (!allowed) throw SecurityException("Folder access expired. Re-link this project before snapshotting it.")
     }
 
-    private fun safeName(raw: String): String {
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")\n        .digest(bytes).joinToString("") { "%02x".format(it) }\n\n    private fun safeName(raw: String): String {
         val name = raw.trim()
         require(name.isNotEmpty() && name != "." && name != "..") { "Invalid source entry name." }
         require('/' !in name && '\\' !in name && !name.contains('\u0000')) { "Unsafe source entry name." }
@@ -181,7 +210,7 @@ class ProjectSnapshotter(
     }
 
     companion object {
-        private const val SNAPSHOT_DIRECTORY = "build-workspaces"
+        private const val SNAPSHOT_DIRECTORY = "build-workspaces"\n        private const val MANIFEST_NAME = "snapshot-manifest.json"
         private val EXCLUDED_DIRECTORIES = setOf(".git", ".gradle", "build", ".idea", ".kotlin", "node_modules")
     }
 }
