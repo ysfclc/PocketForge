@@ -138,3 +138,5 @@ The new connector source and static contract checks were committed to the featur
 - `BuildRunStore.create(..., snapshot)` now verifies canonical app-private containment and reruns complete manifest/file/source-fingerprint verification immediately before persisting a snapshot-bound run. It rejects tampered, missing, relocated, or cross-project snapshot input.
 - Foundation assertions and architecture/roadmap documentation updated. This is a persistence gate only; no executor or UI currently creates these runs.
 - Android CI and runtime tests are pending. No APK/device acceptance is claimed.
+
+- CI concurrency now cancels superseded validation for the same ref, preventing every rapid commit from leaving a long queue of obsolete Android/security builds. Only the latest revision is intended to consume the full validation slot.
