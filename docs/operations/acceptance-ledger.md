@@ -110,3 +110,12 @@ The new connector source and static contract checks were committed to the featur
 - Added the active governance branch to push triggers for the Android pipeline and static security workflow.
 - Added the same branch push trigger to the minimal Ubuntu 22.04 runner-allocation diagnostic.
 - This ensures commits on the working branch receive compile/security/runner checks even if they are not currently the head of an open pull request. Trigger configuration is authored; run results are pending.
+
+
+## Snapshot source provenance and build-run binding — 2026-11-22
+
+- Snapshot manifests now capture SHA-256 fingerprints of the selected SAF tree URI and root document ID, provider display name, and root last-modified timestamp when available. The raw URI/document ID is not persisted.
+- Snapshot verification requires valid source fingerprints and a non-empty provider display name; the snapshot index persists the provenance fields.
+- BuildRun records now optionally bind to a project-matched StoredProjectSnapshot and persist its snapshot ID, manifest SHA-256, source URI fingerprint and last-modified timestamp. Older records remain readable when these fields are absent.
+- Extended the foundation contract verifier and updated architecture/roadmap documentation.
+- Source and contract changes are committed. Kotlin compilation, CI execution, runtime manifest compatibility, and device validation remain pending. The build-run binding is a persistence capability; no UI or executor invokes it yet.
