@@ -209,7 +209,7 @@ pipeline = Path(".github/workflows/pipeline.yml").read_text()
 for contract in (
     "pull_request:", "push:", "branches: [main, governance/mission-execution-invariants-2026-11-20]", "workflow_dispatch:",
     "scripts/verify-foundation.sh", "scripts/build-rust.sh",
-    "cargo +1.82.0 test", "assembleDebug", "apksigner",
+    "cargo +1.82.0 test", ":app:compileDebugKotlin", "assembleDebug", "apksigner",
     "POCKETFORGE_DEBUG_KEYSTORE_BASE64", "POCKETFORGE_DEBUG_KEYSTORE_PASSWORD",
     "POCKETFORGE_DEBUG_KEY_ALIAS", "POCKETFORGE_DEBUG_KEY_PASSWORD",
     "Remove Preview signing material", "Prepare persistent Preview signing key",
