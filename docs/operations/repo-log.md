@@ -124,3 +124,12 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Added push triggers for `governance/mission-execution-invariants-2026-11-20` to the Android build pipeline, static security workflow and minimal hosted-runner diagnostic.
 - The change closes a workflow-observability gap: commits on this working branch now trigger validation without relying on pull-request association or manual dispatch.
 - Awaiting GitHub Actions run results for the snapshot integrity verifier and current Android source.
+
+
+## 2026-11-22 — Source provenance and build-run binding
+
+- Extended `ProjectSnapshotter` to record privacy-preserving source identity fingerprints and provider metadata in the content-hashed manifest.
+- Extended `ProjectSnapshotVerifier` to require source identity fields before a snapshot can be indexed.
+- Persisted source provenance in `StoredProjectSnapshot` and added optional immutable snapshot provenance to `BuildRun` creation. Snapshot/project mismatch is rejected; legacy records deserialize with absent provenance.
+- Added source-provenance assertions to the foundation verifier and documented limitations: provider last-modified metadata is optional and fingerprints are not a complete source revision proof.
+- Awaiting Android CI compilation and device tests. No build executor or APK is claimed.
