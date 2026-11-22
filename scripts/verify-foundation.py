@@ -94,6 +94,17 @@ for contract in (
 ):
     assert contract in snapshot_source, f"Project snapshot safety contract missing: {contract}"
 assert "ProcessBuilder" not in snapshot_source and "Runtime.getRuntime" not in snapshot_source, "Snapshot preparation must never execute project code"
+snapshot_store_path = Path("android/app/src/main/java/com/pocketforge/app/ProjectSnapshotStore.kt")
+assert snapshot_store_path.is_file(), "Missing persistent project snapshot index"
+snapshot_store = snapshot_store_path.read_text()
+for contract in (
+    "data class StoredProjectSnapshot", "class ProjectSnapshotStore", "fun all()",
+    "fun forProject(projectId: String)", "fun add(snapshot: ProjectSnapshot",
+    "fun remove(snapshotId: String)", "pocketforge.snapshots.v1",
+    "canonicalFile", "Refusing to delete a directory outside snapshot storage",
+):
+    assert contract in snapshot_store, f"Snapshot index contract missing: {contract}"
+assert "ProjectSnapshotStore(this).add(prepared, project.id, project.name)" in app, "Completed snapshots must be persisted to the local index"
 for contract in (
     "manifestFile", "manifestSha256", "snapshot-manifest.json", "schemaVersion",
     "FileRecord", 'MessageDigest.getInstance("SHA-256")', "progress.records.sortedBy { it.path }",
