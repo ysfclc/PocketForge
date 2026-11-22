@@ -94,3 +94,12 @@ The new connector source and static contract checks were committed to the featur
 - The linked-folder overview now exposes **Assess build** and reports findings, structural blockers and scan truncation. The report explicitly says no source was executed, downloaded, changed or built.
 - This is project preflight only. An on-device Gradle/JDK/Android SDK executor, process isolation, cancellation, build logs, artifact verification and install flow remain unimplemented.
 - Android CI run #150 passed the foundation verifier, Rust cross-build/tests/lints, Android Preview APK assembly, signature/package checks, SBOM generation and provenance upload. The source and CI compile gates are passed; target-device SAF acceptance remains open. The actual imported-project build runner is still not implemented.
+
+
+## Snapshot integrity verification — 2026-11-22
+
+- Added `ProjectSnapshotVerifier` and wired it into the local snapshot preparation path before the project-linked index is written.
+- Verification checks the saved manifest SHA-256, manifest schema and snapshot ID, expected file count/total bytes, safe relative paths, canonical containment under the exact app-owned `filesDir/build-workspaces` root, per-file size and SHA-256, aggregate byte totals, and rejects missing or unlisted files.
+- A failed verification deletes the just-created snapshot and prevents indexing. Successful UI confirmation reports the verified file count and size.
+- Expanded `scripts/verify-foundation.py` to enforce the verifier and UI wiring contract.
+- Source authored and repository contract assertions added. Android CI compilation and target-device mutation/tamper tests are pending; this entry is not a claim of a successful build or device acceptance.
