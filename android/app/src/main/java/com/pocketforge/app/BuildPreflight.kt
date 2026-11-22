@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream
 data class BuildAssessment(
     val projectType: String,
     val buildSystem: String,
+    val buildRoot: String,
     val rootEntries: List<String>,
     val modules: List<String>,
     val hasGradleWrapperScript: Boolean,
@@ -67,15 +68,52 @@ object BuildPreflight {
         val names = files.keys.map { it.lowercase() }.toSet()
         val rootNames = root.entries.map { it.name }
         if (root.truncated) truncated = true
-        val settings = findPath(files.keys, "settings.gradle", "settings.gradle.kts")
-        val rootBuild = findPath(files.keys, "build.gradle", "build.gradle.kts")
-        val wrapperProperties = files.keys.firstOrNull { it.equals("gradle/wrapper/gradle-wrapper.properties", true) }
-        val wrapperJar = files.keys.firstOrNull { it.equals("gradle/wrapper/gradle-wrapper.jar", true) }
-        val wrapperScript = files.keys.firstOrNull { it.equals("gradlew", true) }
-        val manifests = files.keys.filter { it.substringAfterLast('/').equals("AndroidManifest.xml", true) }
-        val moduleBuildFiles = files.keys.filter {
+        val settingsCandidates = files.keys.filter {
+            val leaf = it.substringAfterLast('/')
+            leaf.equals("settings.gradle", true) || leaf.equals("settings.gradle.kts", true)
+        }
+        val buildFileCandidates = files.keys.filter {
             val leaf = it.substringAfterLast('/')
             leaf.equals("build.gradle", true) || leaf.equals("build.gradle.kts", true)
+        }
+        val manifestCandidates = files.keys.filter { it.substringAfterLast('/').equals("AndroidManifest.xml", true) }
+        fun parentPath(path: String): String = if ('/' in path) path.substringBeforeLast('/') else ""
+        fun hasManifestBelow(candidateRoot: String): Boolean = manifestCandidates.any {
+            candidateRoot.isEmpty() || it.startsWith("$candidateRoot/")
+        }
+        val candidateRoots = (settingsCandidates + buildFileCandidates)
+            .map { parentPath(it) }
+            .distinct()
+        fun rootScore(candidateRoot: String): Int {
+            val prefix = if (candidateRoot.isEmpty()) "" else "$candidateRoot/"
+            val wrapperScriptExists = files.keys.any { it.equals(prefix + "gradlew", true) }
+            val wrapperJarExists = files.keys.any { it.equals(prefix + "gradle/wrapper/gradle-wrapper.jar", true) }
+            val wrapperPropertiesExist = files.keys.any { it.equals(prefix + "gradle/wrapper/gradle-wrapper.properties", true) }
+            val rootBuildExists = files.keys.any {
+                it.equals(prefix + "build.gradle", true) || it.equals(prefix + "build.gradle.kts", true)
+            }
+            return (if (hasManifestBelow(candidateRoot)) 8 else 0) +
+                (if (wrapperScriptExists && wrapperJarExists && wrapperPropertiesExist) 8 else 0) +
+                (if (rootBuildExists) 2 else 0) +
+                (if (settingsCandidates.any { parentPath(it) == candidateRoot }) 1 else 0)
+        }
+        val buildRoot = candidateRoots.maxByOrNull { rootScore(it) } ?: ""
+        fun relativeToBuildRoot(path: String): String? = when {
+            buildRoot.isEmpty() -> path
+            path.startsWith("$buildRoot/") -> path.removePrefix("$buildRoot/")
+            else -> null
+        }
+        val settings = settingsCandidates.firstOrNull { parentPath(it) == buildRoot }
+        val rootBuild = buildFileCandidates.firstOrNull { relativeToBuildRoot(it)?.let { relative ->
+            relative.equals("build.gradle", true) || relative.equals("build.gradle.kts", true)
+        } == true }
+        val wrapperProperties = files.keys.firstOrNull { relativeToBuildRoot(it)?.equals("gradle/wrapper/gradle-wrapper.properties", true) == true }
+        val wrapperJar = files.keys.firstOrNull { relativeToBuildRoot(it)?.equals("gradle/wrapper/gradle-wrapper.jar", true) == true }
+        val wrapperScript = files.keys.firstOrNull { relativeToBuildRoot(it)?.equals("gradlew", true) == true }
+        val manifests = manifestCandidates.filter { relativeToBuildRoot(it) != null }
+        val moduleBuildFiles = buildFileCandidates.filter { path ->
+            val relative = relativeToBuildRoot(path) ?: return@filter false
+            '/' in relative
         }
         val gradleBuildText = (listOfNotNull(rootBuild, settings) + moduleBuildFiles.take(12))
             .distinct()
@@ -91,12 +129,10 @@ object BuildPreflight {
             ?.firstOrNull { it.trim().startsWith("distributionUrl=") }
             ?.substringAfter('=')
             ?.trim()
-            ?.replace("\\:", ":")
-        val modules = moduleBuildFiles.filter { '/' in it }
-            .map { it.substringBeforeLast('/') }
-            .distinct()
-            .sorted()
-
+            ?.replace("\\\\:", ":")
+        val modules = moduleBuildFiles.mapNotNull { path ->
+            relativeToBuildRoot(path)?.substringBeforeLast('/')
+        }.distinct().sorted()
         val isAndroid = manifests.isNotEmpty() || hasAndroidPlugin
         val hasGradle = settings != null || rootBuild != null || moduleBuildFiles.isNotEmpty()
         val findings = mutableListOf<String>()
@@ -130,6 +166,7 @@ object BuildPreflight {
         return BuildAssessment(
             projectType = if (isAndroid) "Android project" else if (hasRust) "Rust project" else "Unclassified project",
             buildSystem = buildSystem,
+            buildRoot = buildRoot,
             rootEntries = rootNames,
             modules = modules,
             hasGradleWrapperScript = wrapperScript != null,
