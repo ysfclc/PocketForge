@@ -1,6 +1,7 @@
 package com.pocketforge.app
 
 import android.content.Context
+import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
@@ -28,6 +29,7 @@ data class BuildRun(
 )
 
 class BuildRunStore(context: Context) {
+    private val appFiles = context.filesDir.canonicalFile
     private val prefs = context.getSharedPreferences("pocketforge.build-runs.v1", Context.MODE_PRIVATE)
 
     @Synchronized
@@ -57,6 +59,23 @@ class BuildRunStore(context: Context) {
                     snapshot.sourceRootIdSha256.matches(hashPattern)
             ) {
                 "Build snapshot identity or source provenance is incomplete."
+            }
+            val snapshotDirectory = File(snapshot.directoryPath).canonicalFile
+            val snapshotRoot = File(appFiles, "build-workspaces").canonicalFile
+            require(snapshotDirectory.parentFile == snapshotRoot) {
+                "Build snapshot is outside PocketForge's private snapshot storage."
+            }
+            val verification = ProjectSnapshotVerifier(snapshotRoot).verify(
+                directory = snapshotDirectory,
+                expectedSnapshotId = snapshot.snapshotId,
+                expectedManifestSha256 = snapshot.manifestSha256,
+                expectedFileCount = snapshot.fileCount,
+                expectedTotalBytes = snapshot.totalBytes,
+                expectedSourceUriSha256 = snapshot.sourceUriSha256,
+                expectedSourceRootIdSha256 = snapshot.sourceRootIdSha256
+            )
+            require(verification.valid) {
+                verification.failure ?: "Build snapshot integrity verification failed."
             }
         }
         val now = System.currentTimeMillis()
