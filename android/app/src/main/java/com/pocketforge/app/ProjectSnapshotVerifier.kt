@@ -17,6 +17,7 @@ data class SnapshotVerificationResult(
  * This validates integrity and containment; it does not make project build scripts safe.
  */
 class ProjectSnapshotVerifier(
+    private val snapshotRoot: File,
     private val maxFiles: Int = 10_000,
     private val maxTotalBytes: Long = 512L * 1024L * 1024L,
     private val maxFileBytes: Long = 64L * 1024L * 1024L
@@ -40,7 +41,7 @@ class ProjectSnapshotVerifier(
             require(expectedTotalBytes in 0..maxTotalBytes) { "Snapshot size exceeds verification limits." }
 
             val root = directory.canonicalFile
-            require(root.isDirectory && root.parentFile?.name == SNAPSHOT_DIRECTORY) {
+            require(root.isDirectory && root.parentFile == snapshotRoot.canonicalFile) {
                 "Snapshot directory is not inside PocketForge snapshot storage."
             }
             val manifest = File(root, MANIFEST_NAME).canonicalFile
@@ -118,7 +119,6 @@ class ProjectSnapshotVerifier(
         .digest(bytes).joinToString("") { "%02x".format(it) }
 
     companion object {
-        private const val SNAPSHOT_DIRECTORY = "build-workspaces"
         private const val MANIFEST_NAME = "snapshot-manifest.json"
         private val SHA256_PATTERN = Regex("^[a-fA-F0-9]{64}$")
     }
