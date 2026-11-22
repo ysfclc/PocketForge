@@ -14,7 +14,11 @@ data class StoredProjectSnapshot(
     val manifestSha256: String,
     val fileCount: Int,
     val totalBytes: Long,
-    val createdAt: Long
+    val createdAt: Long,
+    val sourceUriSha256: String,
+    val sourceRootIdSha256: String,
+    val sourceDisplayName: String,
+    val sourceLastModified: Long?
 )
 
 /** Persists completed snapshots as project-linked records; only app-owned directories can be deleted. */
@@ -46,7 +50,11 @@ class ProjectSnapshotStore(context: Context) {
             manifestSha256 = snapshot.manifestSha256,
             fileCount = snapshot.fileCount,
             totalBytes = snapshot.totalBytes,
-            createdAt = snapshot.createdAt
+            createdAt = snapshot.createdAt,
+            sourceUriSha256 = snapshot.sourceUriSha256,
+            sourceRootIdSha256 = snapshot.sourceRootIdSha256,
+            sourceDisplayName = snapshot.sourceDisplayName,
+            sourceLastModified = snapshot.sourceLastModified
         )
         write(read() + stored)
         return stored
@@ -81,7 +89,11 @@ class ProjectSnapshotStore(context: Context) {
                     manifestSha256 = item.optString("manifestSha256"),
                     fileCount = item.optInt("fileCount"),
                     totalBytes = item.optLong("totalBytes"),
-                    createdAt = item.optLong("createdAt")
+                    createdAt = item.optLong("createdAt"),
+                    sourceUriSha256 = item.optString("sourceUriSha256"),
+                    sourceRootIdSha256 = item.optString("sourceRootIdSha256"),
+                    sourceDisplayName = item.optString("sourceDisplayName", "Linked project folder"),
+                    sourceLastModified = if (item.has("sourceLastModified") && !item.isNull("sourceLastModified")) item.optLong("sourceLastModified").takeIf { it > 0L } else null
                 ))
             }
         }
@@ -100,6 +112,11 @@ class ProjectSnapshotStore(context: Context) {
                 put("fileCount", item.fileCount)
                 put("totalBytes", item.totalBytes)
                 put("createdAt", item.createdAt)
+                put("sourceUriSha256", item.sourceUriSha256)
+                put("sourceRootIdSha256", item.sourceRootIdSha256)
+                put("sourceDisplayName", item.sourceDisplayName)
+                if (item.sourceLastModified == null) put("sourceLastModified", JSONObject.NULL)
+                else put("sourceLastModified", item.sourceLastModified)
             })
         }
         check(prefs.edit().putString(KEY_SNAPSHOTS, array.toString()).commit()) {
