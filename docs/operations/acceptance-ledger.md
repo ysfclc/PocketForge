@@ -129,3 +129,12 @@ The new connector source and static contract checks were committed to the featur
 - The first full PR validation reached the hosted runner and actionlint passed, then the foundation contract check failed because it still expected the pipeline's old main-only push trigger and exactly three workflow files. Updated those assertions for the governance branch and runner diagnostic workflow.
 - Security validation also exposed that GitHub Dependency Review is unsupported for this private repository without the required Advanced Security/dependency graph entitlement. Guarded that optional PR job to public repositories; the static security job remains active.
 - Re-run of the updated contracts and Android build is pending. The failed attempt stopped before Kotlin/Android compilation, so no compile success is claimed.
+
+
+## Snapshot revalidation at build-run binding — 2026-11-22
+
+- Extended the verifier to compare both source fingerprints in the manifest against the saved snapshot record, not merely validate their format.
+- The snapshot-preparation UI passes the expected fingerprints into verification.
+- `BuildRunStore.create(..., snapshot)` now verifies canonical app-private containment and reruns complete manifest/file/source-fingerprint verification immediately before persisting a snapshot-bound run. It rejects tampered, missing, relocated, or cross-project snapshot input.
+- Foundation assertions and architecture/roadmap documentation updated. This is a persistence gate only; no executor or UI currently creates these runs.
+- Android CI and runtime tests are pending. No APK/device acceptance is claimed.
