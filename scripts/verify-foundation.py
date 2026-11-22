@@ -82,6 +82,19 @@ for contract in (
     assert contract in build_run_store, f"Build-run persistence missing contract: {contract}"
 assert "ProcessBuilder" not in build_run_store and "Runtime.getRuntime" not in build_run_store, "Build-run store must not execute project code"
 
+snapshot_path = Path("android/app/src/main/java/com/pocketforge/app/ProjectSnapshotter.kt")
+assert snapshot_path.is_file(), "Missing bounded app-private project snapshot preparation"
+snapshot_source = snapshot_path.read_text()
+for contract in (
+    "class ProjectSnapshotter", "data class ProjectSnapshot", "data class SnapshotLimits",
+    "persistedUriPermissions", "filesDir", "build-workspaces", "renameTo(destination)",
+    "isCancelled", "onProgress", "maxEntries", "maxDepth", "maxTotalBytes", "maxFileBytes",
+    "EXCLUDED_DIRECTORIES", ".git", ".gradle", "node_modules", "canonicalFile.parentFile",
+    "SnapshotCancelledException", "output.fd.sync()",
+):
+    assert contract in snapshot_source, f"Project snapshot safety contract missing: {contract}"
+assert "ProcessBuilder" not in snapshot_source and "Runtime.getRuntime" not in snapshot_source, "Snapshot preparation must never execute project code"
+
 # Build-root scoring must use actual Android manifest evidence, not treat the
 # empty repository root as Android merely because it is a candidate.
 preflight_source = build_preflight
