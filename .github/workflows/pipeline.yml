@@ -70,6 +70,10 @@ jobs:
           cargo +1.82.0 test --workspace --locked
           cargo +1.82.0 clippy --workspace --all-targets --locked -- -D warnings
 
+      - name: Compile Android Kotlin sources
+        working-directory: android
+        run: gradle --no-daemon --stacktrace :app:compileDebugKotlin
+
       - name: Prepare persistent Preview signing key
         shell: bash
         env:
