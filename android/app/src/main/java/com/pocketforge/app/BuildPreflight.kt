@@ -19,10 +19,7 @@ data class BuildAssessment(
     val scanTruncated: Boolean,
     val findings: List<String>,
     val blockers: List<String>
-) {
-    val canStartBuild: Boolean get() = false
-}
-
+)
 /**
  * Read-only project preflight over the SAF tree selected by the user.
  * It never copies, edits, executes or uploads project files.
