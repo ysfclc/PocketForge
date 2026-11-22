@@ -485,13 +485,24 @@ class MainActivity : Activity() {
         }
         Thread {
             val result = runCatching {
-                ProjectSnapshotter(this).create(treeUri, { cancelled.get() }) { files, bytes ->
+                val prepared = ProjectSnapshotter(this).create(treeUri, { cancelled.get() }) { files, bytes ->
                     runOnUiThread {
                         if (!isFinishing && !isDestroyed) {
                             progress.setMessage("$files files · ${formatBytes(bytes)} copied")
                         }
                     }
                 }
+                val verification = ProjectSnapshotVerifier(java.io.File(filesDir, "build-workspaces")).verify(
+                    directory = prepared.directory,
+                    expectedSnapshotId = prepared.id,
+                    expectedManifestSha256 = prepared.manifestSha256,
+                    expectedFileCount = prepared.fileCount,
+                    expectedTotalBytes = prepared.totalBytes
+                )
+                check(verification.valid) {
+                    verification.failure ?: "Snapshot integrity verification failed."
+                }
+                prepared
             }
             runOnUiThread {
                 progress.dismiss()
