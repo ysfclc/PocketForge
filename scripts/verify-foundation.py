@@ -96,7 +96,7 @@ for contract in (
 assert "ProcessBuilder" not in snapshot_source and "Runtime.getRuntime" not in snapshot_source, "Snapshot preparation must never execute project code"
 for contract in (
     "manifestFile", "manifestSha256", "snapshot-manifest.json", "schemaVersion",
-    "FileRecord", "MessageDigest.getInstance(\\"SHA-256\\")", "progress.records.sortedBy { it.path }",
+    "FileRecord", 'MessageDigest.getInstance("SHA-256")', "progress.records.sortedBy { it.path }",
 ):
     assert contract in snapshot_source, f"Snapshot manifest/hash contract missing: {contract}"
 assert "Prepare snapshot" in app and "prepareProjectSnapshot(project)" in app, "Local project UI must expose snapshot preparation"
