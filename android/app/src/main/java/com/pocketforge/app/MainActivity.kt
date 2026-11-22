@@ -497,10 +497,20 @@ class MainActivity : Activity() {
                 progress.dismiss()
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 result.onSuccess { prepared ->
+                    val stored = runCatching { ProjectSnapshotStore(this).add(prepared, project.id, project.name) }
+                    if (stored.isFailure) {
+                        prepared.directory.deleteRecursively()
+                        AlertDialog.Builder(this)
+                            .setTitle("Snapshot prepared but not saved")
+                            .setMessage(stored.exceptionOrNull()?.message ?: "Could not save snapshot metadata.")
+                            .setPositiveButton("OK", null)
+                            .show()
+                        return@runOnUiThread
+                    }
                     AlertDialog.Builder(this)
                         .setTitle("Snapshot ready")
                         .setMessage(
-                            "PROJECT · ${project.name}\n\nFiles: ${prepared.fileCount}\nSize: ${formatBytes(prepared.totalBytes)}\nSkipped directories: ${prepared.skippedEntries.size}\n\nPrivate workspace: ${prepared.directory.absolutePath}\nManifest: ${prepared.manifestFile.name}\nManifest SHA-256: ${prepared.manifestSha256}\n\nThis snapshot is prepared only. No build scripts have been executed."
+                            "PROJECT · ${project.name}\n\nFiles: ${prepared.fileCount}\nSize: ${formatBytes(prepared.totalBytes)}\nSkipped directories: ${prepared.skippedEntries.size}\n\nSaved snapshot record for project.\nPrivate workspace: ${prepared.directory.absolutePath}\nManifest: ${prepared.manifestFile.name}\nManifest SHA-256: ${prepared.manifestSha256}\n\nThis snapshot is prepared only. No build scripts have been executed."
                         )
                         .setPositiveButton("OK", null)
                         .show()
