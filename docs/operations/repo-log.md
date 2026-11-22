@@ -135,3 +135,11 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Awaiting Android CI compilation and device tests. No build executor or APK is claimed.
 
 - Follow-up hardening: moved source metadata lookup inside the snapshot staging cleanup boundary, so a provider metadata-query failure also removes the partial directory. BuildRun provenance now retains and requires both source URI and root-document fingerprints.
+
+
+## 2026-11-22 — CI feedback loop
+
+- Confirmed hosted runner allocation: runner diagnostic #46 completed successfully on Ubuntu 22.04.
+- Retrieved CI logs. `actionlint` passed; the foundation verifier was stale against the intentional governance branch push trigger and newly added runner workflow. Updated its workflow expectations and added a guard assertion for the private-repository Dependency Review limitation.
+- GitHub Dependency Review itself failed because this private repository lacks the required Advanced Security/dependency graph support. Conditioned the optional review job on public repositories; cargo-deny/cargo-audit static checks remain unaffected.
+- Initial Android pipeline run stopped at the same stale foundation assertion before Rust/Gradle compilation. Awaiting validation of the repaired verifier and the latest Kotlin source.
