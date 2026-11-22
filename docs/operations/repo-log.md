@@ -108,3 +108,12 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Preview certificate SHA-256 fingerprint: `9D:89:C5:B3:3B:9D:B7:56:B6:00:84:22:8B:B9:58:98:12:C7:1F:D5:F7:56:2E:30:A7:D4:AB:39:06:D0:6D:5F`.
 - User action is required to add the four values from the private bundle to repository Settings → Secrets and variables → Actions. After that, dispatch the pipeline to produce the first trusted Preview APK. Production release signing remains separate.
 - Preview has a fresh app-private store; the original app is not removed. Re-select the source folder inside Preview to create its local record and persisted Android folder permission.
+
+
+## 2026-11-22 — Snapshot integrity gate
+
+- Added `ProjectSnapshotVerifier.kt` as a separate integrity boundary for staged project inputs.
+- The verifier checks manifest hash/schema/identity, safe unique relative paths, exact app-private root containment, each file's byte length and SHA-256, aggregate counts/bytes, and exact agreement between the manifest file set and files physically present.
+- Integrated verification on the snapshot worker thread before the snapshot is indexed. Invalid snapshots are deleted; the success dialog explicitly reports the verified file count and bytes.
+- Extended the foundation verifier and updated the local-build architecture and roadmap.
+- Verification remains source-level only until CI compiles the Kotlin changes and the target Android device exercises both successful verification and deliberate file/manifest tampering. No imported-project build executor is claimed.
