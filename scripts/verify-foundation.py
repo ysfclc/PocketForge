@@ -94,6 +94,19 @@ for contract in (
 ):
     assert contract in snapshot_source, f"Project snapshot safety contract missing: {contract}"
 assert "ProcessBuilder" not in snapshot_source and "Runtime.getRuntime" not in snapshot_source, "Snapshot preparation must never execute project code"
+snapshot_verifier_path = Path("android/app/src/main/java/com/pocketforge/app/ProjectSnapshotVerifier.kt")
+assert snapshot_verifier_path.is_file(), "Missing project snapshot integrity verifier"
+snapshot_verifier = snapshot_verifier_path.read_text()
+for contract in (
+    "class ProjectSnapshotVerifier", "snapshotRoot.canonicalFile",
+    "expectedManifestSha256", "schemaVersion", "expectedSnapshotId",
+    "MessageDigest.getInstance(\"SHA-256\")", "isSafeRelativePath",
+    "Snapshot contains missing or unlisted files", "target.length() == expectedBytes",
+):
+    assert contract in snapshot_verifier, f"Snapshot integrity verification contract missing: {contract}"
+assert "ProjectSnapshotVerifier(java.io.File(filesDir, \"build-workspaces\"))" in app, "Snapshot must be verified against the app-owned root"
+assert "if (!verification.valid)" in app and "prepared.directory.deleteRecursively()" in app, "Invalid snapshots must be removed before indexing"
+assert "Integrity: VERIFIED" in app, "Snapshot UI must report verified integrity"
 snapshot_store_path = Path("android/app/src/main/java/com/pocketforge/app/ProjectSnapshotStore.kt")
 assert snapshot_store_path.is_file(), "Missing persistent project snapshot index"
 snapshot_store = snapshot_store_path.read_text()
