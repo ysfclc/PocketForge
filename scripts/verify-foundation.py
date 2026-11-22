@@ -57,6 +57,20 @@ assert "initialRepository: String? = null" in app, "GitHub reconnect should pref
 assert "project.githubRevision ?: project.githubDefaultBranch" not in app, "GitHub browsing must not fall back to a moving branch"
 assert "sizeColumn < 0" in local_inspector, "Local inspection must tolerate providers without an optional size column"
 
+build_preflight_path = Path("android/app/src/main/java/com/pocketforge/app/BuildPreflight.kt")
+assert build_preflight_path.is_file(), "Missing read-only imported-project build preflight"
+build_preflight = build_preflight_path.read_text()
+for contract in (
+    "persistedUriPermissions", "MAX_DEPTH", "MAX_ENTRIES", "MAX_TEXT_BYTES",
+    "gradle-wrapper.properties", "gradle-wrapper.jar", "com.android.application",
+    "AndroidManifest.xml", "Cargo.toml", "distributionUrl",
+    "never copies, edits, executes or uploads",
+):
+    assert contract in build_preflight, f"Build preflight missing safety/detection contract: {contract}"
+assert "ProcessBuilder" not in build_preflight and "Runtime.getRuntime" not in build_preflight, "Preflight must never execute imported project code"
+for contract in ("BuildPreflight.assess", "showBuildAssessment", "Assess build", "structural assessment only"):
+    assert contract in app, f"Local build preflight UI missing contract: {contract}"
+
 github_client_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubRepositoryClient.kt")
 github_vault_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubTokenVault.kt")
 assert github_client_path.is_file(), "Missing native GitHub repository adapter"
