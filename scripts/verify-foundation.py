@@ -78,6 +78,8 @@ for contract in (
     "QUEUED", "PREPARING", "RUNNING", "CANCELLING", "SUCCEEDED",
     "FAILED", "CANCELLED", "INTERRUPTED", "Illegal build transition",
     "outputArtifacts", "logReference", "failureReason", "commit()",
+    "snapshotId", "manifestSha256", "sourceUriSha256", "sourceLastModified",
+    "snapshot: StoredProjectSnapshot?", "snapshot.projectId == projectId",
 ):
     assert contract in build_run_store, f"Build-run persistence missing contract: {contract}"
 assert "ProcessBuilder" not in build_run_store and "Runtime.getRuntime" not in build_run_store, "Build-run store must not execute project code"
@@ -91,6 +93,8 @@ for contract in (
     "isCancelled", "onProgress", "maxEntries", "maxDepth", "maxTotalBytes", "maxFileBytes",
     "EXCLUDED_DIRECTORIES", ".git", ".gradle", "node_modules", "canonicalFile.parentFile",
     "SnapshotCancelledException", "output.fd.sync()",
+    "data class SourceIdentity", "treeUriSha256", "rootDocumentIdSha256",
+    "COLUMN_LAST_MODIFIED", "sourceIdentity", "sourceDisplayName",
 ):
     assert contract in snapshot_source, f"Project snapshot safety contract missing: {contract}"
 assert "ProcessBuilder" not in snapshot_source and "Runtime.getRuntime" not in snapshot_source, "Snapshot preparation must never execute project code"
@@ -102,6 +106,7 @@ for contract in (
     "expectedManifestSha256", "schemaVersion", "expectedSnapshotId",
     "MessageDigest.getInstance(\"SHA-256\")", "isSafeRelativePath",
     "Snapshot contains missing or unlisted files", "target.length() == expectedBytes",
+    "sourceIdentity", "treeUriSha256", "rootDocumentIdSha256",
 ):
     assert contract in snapshot_verifier, f"Snapshot integrity verification contract missing: {contract}"
 assert "ProjectSnapshotVerifier(java.io.File(filesDir, \"build-workspaces\"))" in app, "Snapshot must be verified against the app-owned root"
@@ -115,6 +120,7 @@ for contract in (
     "fun forProject(projectId: String)", "fun add(snapshot: ProjectSnapshot",
     "fun remove(snapshotId: String)", "pocketforge.snapshots.v1",
     "canonicalFile", "Refusing to delete a directory outside snapshot storage",
+    "sourceUriSha256", "sourceRootIdSha256", "sourceDisplayName", "sourceLastModified",
 ):
     assert contract in snapshot_store, f"Snapshot index contract missing: {contract}"
 assert "ProjectSnapshotStore(this).add(prepared, project.id, project.name)" in app, "Completed snapshots must be persisted to the local index"
