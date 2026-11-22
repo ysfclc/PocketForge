@@ -499,8 +499,9 @@ class MainActivity : Activity() {
                     expectedFileCount = prepared.fileCount,
                     expectedTotalBytes = prepared.totalBytes
                 )
-                check(verification.valid) {
-                    verification.failure ?: "Snapshot integrity verification failed."
+                if (!verification.valid) {
+                    prepared.directory.deleteRecursively()
+                    error(verification.failure ?: "Snapshot integrity verification failed.")
                 }
                 prepared
             }
@@ -521,7 +522,7 @@ class MainActivity : Activity() {
                     AlertDialog.Builder(this)
                         .setTitle("Snapshot ready")
                         .setMessage(
-                            "PROJECT · ${project.name}\n\nFiles: ${prepared.fileCount}\nSize: ${formatBytes(prepared.totalBytes)}\nSkipped directories: ${prepared.skippedEntries.size}\n\nSaved snapshot record for project.\nPrivate workspace: ${prepared.directory.absolutePath}\nManifest: ${prepared.manifestFile.name}\nManifest SHA-256: ${prepared.manifestSha256}\n\nThis snapshot is prepared only. No build scripts have been executed."
+                            "PROJECT · ${project.name}\n\nFiles: ${prepared.fileCount}\nSize: ${formatBytes(prepared.totalBytes)}\nSkipped directories: ${prepared.skippedEntries.size}\n\nSaved snapshot record for project.\nIntegrity: VERIFIED (\u0024{prepared.fileCount} files · \u0024{formatBytes(prepared.totalBytes)}).\nPrivate workspace: ${prepared.directory.absolutePath}\nManifest: ${prepared.manifestFile.name}\nManifest SHA-256: ${prepared.manifestSha256}\n\nThis snapshot is prepared only. No build scripts have been executed."
                         )
                         .setPositiveButton("OK", null)
                         .show()
