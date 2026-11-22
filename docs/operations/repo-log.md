@@ -151,3 +151,5 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Updated the preparation path to supply the captured fingerprints.
 - Strengthened `BuildRunStore.create` so an optional snapshot-bound run is persisted only after canonical path containment and a complete second verification of the manifest, files and source identity. Cross-project, relocated and tampered snapshots are rejected.
 - Updated foundation contract checks, architecture and roadmap. Build-run creation remains unconnected to UI/execution pending the actual local runner design.
+
+- CI concurrency now cancels superseded validation for the same ref, preventing every rapid commit from leaving a long queue of obsolete Android/security builds. Only the latest revision is intended to consume the full validation slot.
