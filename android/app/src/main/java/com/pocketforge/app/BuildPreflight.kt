@@ -79,7 +79,7 @@ object BuildPreflight {
         val manifestCandidates = files.keys.filter { it.substringAfterLast('/').equals("AndroidManifest.xml", true) }
         fun parentPath(path: String): String = if ('/' in path) path.substringBeforeLast('/') else ""
         fun hasManifestBelow(candidateRoot: String): Boolean = manifestCandidates.any {
-            candidateRoot.isEmpty() || it.startsWith("$candidateRoot/")
+            candidateRoot.isEmpty() || it == candidateRoot || it.startsWith("$candidateRoot/")
         }
         val candidateRoots = (settingsCandidates + buildFileCandidates)
             .map { parentPath(it) }
