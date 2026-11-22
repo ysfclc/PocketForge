@@ -94,6 +94,14 @@ for contract in (
 ):
     assert contract in snapshot_source, f"Project snapshot safety contract missing: {contract}"
 assert "ProcessBuilder" not in snapshot_source and "Runtime.getRuntime" not in snapshot_source, "Snapshot preparation must never execute project code"
+for contract in (
+    "manifestFile", "manifestSha256", "snapshot-manifest.json", "schemaVersion",
+    "FileRecord", "MessageDigest.getInstance(\\"SHA-256\\")", "progress.records.sortedBy { it.path }",
+):
+    assert contract in snapshot_source, f"Snapshot manifest/hash contract missing: {contract}"
+assert "Prepare snapshot" in app and "prepareProjectSnapshot(project)" in app, "Local project UI must expose snapshot preparation"
+for contract in ("Snapshot ready", "Manifest SHA-256", "Snapshot cancelled", "No build scripts have been executed"):
+    assert contract in app, f"Snapshot UI result missing safety/status contract: {contract}"
 
 # Build-root scoring must use actual Android manifest evidence, not treat the
 # empty repository root as Android merely because it is a candidate.
