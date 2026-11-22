@@ -58,7 +58,7 @@ The second command builds the Rust JNI libraries for all configured Android ABIs
 
 ## Architecture
 
-Binding mission-execution constraints: [mission execution invariants](docs/architecture/mission-execution-invariants.md). All development missions use one provider-agnostic, scoped execution lifecycle; examples are not hardcoded workflows.
+Binding mission-execution constraints: [mission execution invariants](docs/architecture/mission-execution-invariants.md). The on-device compiler design and its safety gates are specified in [local build execution](docs/architecture/local-build-execution.md). All development missions use one provider-agnostic, scoped execution lifecycle; examples are not hardcoded workflows.
 
 ```mermaid
 flowchart TD
@@ -80,7 +80,7 @@ flowchart TD
 ## Repository navigation
 
 - Product definition: `docs/product/`
-- Architecture and FFI contract: `docs/architecture/`
+- Architecture, local build execution and FFI contract: `docs/architecture/`
 - Architectural decisions: `docs/decisions/`
 - Threat model and security policy: `docs/security/`
 - Build, phase and release operations: `docs/operations/`
