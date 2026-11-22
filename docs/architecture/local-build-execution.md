@@ -43,6 +43,25 @@ The spike must prove, on the target device:
 
 If the native child-process approach fails, evaluate a separately installed, explicitly permissioned local runner companion as an adapter. That alternative must remain on-device and must not silently become a hosted build service. A Termux adapter is optional and requires a clear user-facing installation/permission flow.
 
+### Optional Termux execution adapter
+
+Termux exposes a documented `RUN_COMMAND` intent for third-party apps. It is a viable local feasibility adapter, not the default product dependency. It requires the sender to declare and receive the user's grant for `com.termux.permission.RUN_COMMAND`, and Termux itself must have `allow-external-apps=true`. For target SDK 30+, package visibility must also be configured. Java callers can receive command results through a PendingIntent on supported Termux versions. These requirements make the adapter opt-in and visible; PocketForge must never silently enable external command execution.
+
+The adapter must:
+- Detect the installed Termux package/version and verify that the required service and permission are available before offering setup.
+- Explain that granting RUN_COMMAND lets PocketForge ask Termux to execute commands in Termux's environment; the user must also enable Termux's external-app setting.
+- Use a fixed, PocketForge-owned runner script and structured argument file. Never interpolate project paths, task names or user text into shell source.
+- Keep build staging and output inside a dedicated Termux workspace. Do not assume PocketForge can read Termux's private files or that Termux can read PocketForge's private files; Android isolates app data. Transfer only through an explicit SAF/content-URI grant or another reviewed bridge.
+- Return stdout, stderr, exit code and run ID through the documented result channel; verify that the result belongs to the active PocketForge build run.
+- Remain optional. If Termux is absent, disabled, or permission is revoked, report that state and retain the native-runner roadmap.
+
+A community Android build example demonstrates that Gradle builds can be run in Termux on an ARM64 phone, but it documents platform-specific workarounds such as overriding host-oriented `aapt2`, pinning JDK 17 and constraining Gradle memory. Treat it as a feasibility reference, not a portable toolchain guarantee.
+
+References:
+- [Termux RUN_COMMAND intent and permission model](https://github.com/termux/termux-app/wiki/RUN_COMMAND-Intent)
+- [Termux filesystem isolation and SAF access](https://github.com/termux/termux-packages/wiki/Termux-file-system-layout)
+- [ARM64 Termux Android build example and device notes](https://github.com/Xtratter/termux-android-build)
+
 ## Build lifecycle
 
 Every build is a persisted BuildRun with:
