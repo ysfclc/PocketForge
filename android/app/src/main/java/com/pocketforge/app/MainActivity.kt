@@ -269,7 +269,7 @@ class MainActivity : Activity() {
             "Local folder linked: ${if (hasLocalFolder) "yes" else "not yet"} · GitHub repository connected: ${if (hasGitHubProject) "yes" else "not yet"}",
             hasLocalFolder || hasGitHubProject
         )
-        listStep("03", "Local project build", "Compile and test an imported project on this device", false)
+        listStep("03", "Local project build", "Read-only preflight is available; the on-device Gradle/JDK/SDK runner is still required", false)
         listStep("04", "Mission execution", "Connect an agent, run tools and verify its changes", false)
         listStep("05", "Approved release", "Sign and install a selected project's verified artifact", false)
         page.addView(space(12))
