@@ -149,3 +149,5 @@ The new connector source and static contract checks were committed to the featur
 - The Android APK pipeline stopped at **Prepare persistent Preview signing key** because the four `POCKETFORGE_DEBUG_*` Actions secrets are not configured. APK assembly and signature verification were skipped. No APK was produced by this run and no Kotlin/Gradle Android compilation is claimed.
 - The separate static security job is still queued; cargo-deny/cargo-audit results are not yet available.
 - Required release gate: configure the four persistent signing secrets in GitHub Actions, then rerun the pipeline. Do not substitute an ephemeral signing key for a trusted updateable Preview APK.
+
+- CI now runs `gradle :app:compileDebugKotlin` before the persistent-signing-secret gate. This separates Kotlin compilation feedback from trusted APK signing, so missing release credentials no longer hide source compile errors. Validation of this new step is pending.
