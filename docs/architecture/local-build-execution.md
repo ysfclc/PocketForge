@@ -64,7 +64,7 @@ References:
 
 ## Build lifecycle
 
-Every build is a persisted BuildRun with. The Android app now has a durable local BuildRunStore for creating records and enforcing legal lifecycle transitions; it does not launch a build process yet:
+Every build is a persisted BuildRun with the following fields. The Android app now has a durable local BuildRunStore for creating records and enforcing legal lifecycle transitions; it does not launch a build process yet:
 
 - Project ID, immutable staged-source manifest and source revision.
 - Requested task, variant, build type and environment/toolchain manifest.
