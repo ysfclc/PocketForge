@@ -129,7 +129,7 @@ object BuildPreflight {
             ?.firstOrNull { it.trim().startsWith("distributionUrl=") }
             ?.substringAfter('=')
             ?.trim()
-            ?.replace("\\\\:", ":")
+            ?.replace("\\:", ":")
         val modules = moduleBuildFiles.mapNotNull { path ->
             relativeToBuildRoot(path)?.substringBeforeLast('/')
         }.distinct().sorted()
