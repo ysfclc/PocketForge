@@ -121,3 +121,11 @@ The new connector source and static contract checks were committed to the featur
 - Source and contract changes are committed. Kotlin compilation, CI execution, runtime manifest compatibility, and device validation remain pending. The build-run binding is a persistence capability; no UI or executor invokes it yet.
 
 - Follow-up hardening: moved source metadata lookup inside the snapshot staging cleanup boundary, so a provider metadata-query failure also removes the partial directory. BuildRun provenance now retains and requires both source URI and root-document fingerprints.
+
+
+## CI feedback and workflow repair — 2026-11-22
+
+- Hosted-runner diagnostic completed successfully on GitHub-hosted Ubuntu 22.04 (run #46, run ID 45061210703). This confirms runner allocation is working; the previous no-run observations were not evidence of a persistent runner outage.
+- The first full PR validation reached the hosted runner and actionlint passed, then the foundation contract check failed because it still expected the pipeline's old main-only push trigger and exactly three workflow files. Updated those assertions for the governance branch and runner diagnostic workflow.
+- Security validation also exposed that GitHub Dependency Review is unsupported for this private repository without the required Advanced Security/dependency graph entitlement. Guarded that optional PR job to public repositories; the static security job remains active.
+- Re-run of the updated contracts and Android build is pending. The failed attempt stopped before Kotlin/Android compilation, so no compile success is claimed.
