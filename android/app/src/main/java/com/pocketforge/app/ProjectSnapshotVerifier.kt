@@ -32,13 +32,17 @@ class ProjectSnapshotVerifier(
         expectedSnapshotId: String,
         expectedManifestSha256: String,
         expectedFileCount: Int,
-        expectedTotalBytes: Long
+        expectedTotalBytes: Long,
+        expectedSourceUriSha256: String,
+        expectedSourceRootIdSha256: String
     ): SnapshotVerificationResult {
         return try {
             require(expectedSnapshotId.isNotBlank()) { "Snapshot ID is missing." }
             require(expectedManifestSha256.matches(SHA256_PATTERN)) { "Expected manifest hash is invalid." }
             require(expectedFileCount in 0..maxFiles) { "Snapshot file count exceeds verification limits." }
             require(expectedTotalBytes in 0..maxTotalBytes) { "Snapshot size exceeds verification limits." }
+            require(expectedSourceUriSha256.matches(SHA256_PATTERN)) { "Expected source URI fingerprint is invalid." }
+            require(expectedSourceRootIdSha256.matches(SHA256_PATTERN)) { "Expected source root fingerprint is invalid." }
 
             val root = directory.canonicalFile
             require(root.isDirectory && root.parentFile == snapshotRoot.canonicalFile) {
@@ -62,6 +66,12 @@ class ProjectSnapshotVerifier(
             }
             require(sourceIdentity.optString("rootDocumentIdSha256").matches(SHA256_PATTERN)) {
                 "Snapshot root identity fingerprint is invalid."
+            }
+            require(sourceIdentity.optString("treeUriSha256").equals(expectedSourceUriSha256, ignoreCase = true)) {
+                "Snapshot source URI fingerprint does not match its saved record."
+            }
+            require(sourceIdentity.optString("rootDocumentIdSha256").equals(expectedSourceRootIdSha256, ignoreCase = true)) {
+                "Snapshot root fingerprint does not match its saved record."
             }
             require(sourceIdentity.optString("displayName").isNotBlank()) {
                 "Snapshot source display name is missing."
