@@ -68,6 +68,20 @@ for contract in (
 ):
     assert contract in build_preflight, f"Build preflight missing safety/detection contract: {contract}"
 assert "ProcessBuilder" not in build_preflight and "Runtime.getRuntime" not in build_preflight, "Preflight must never execute imported project code"
+
+# Build-root scoring must use actual Android manifest evidence, not treat the
+# empty repository root as Android merely because it is a candidate.
+def preflight_root_score(candidate_root, manifest_paths, wrapper_roots, root_build_roots, settings_roots):
+    has_manifest = any(
+        (path.startswith(candidate_root + "/") or path == candidate_root)
+        if candidate_root else bool(path)
+        for path in manifest_paths
+    )
+    return (8 if has_manifest else 0) + (8 if candidate_root in wrapper_roots else 0) + (2 if candidate_root in root_build_roots else 0) + (1 if candidate_root in settings_roots else 0)
+
+assert preflight_root_score("", [], set(), {""}, {""}) == 3, "Empty root must not gain Android manifest score"
+assert preflight_root_score("android", ["android/app/src/main/AndroidManifest.xml"], set(), {"android"}, {"android"}) == 11, "Nested Android root must score its manifest and Gradle evidence"
+assert preflight_root_score("", ["app/src/main/AndroidManifest.xml"], {""}, {""}, {""}) == 19, "Root Android project must retain manifest evidence"
 for contract in ("BuildPreflight.assess", "showBuildAssessment", "Assess build", "structural assessment only", "Read-only preflight is available", "assessment.buildRoot"):
     assert contract in app, f"Local build preflight UI missing contract: {contract}"
 
