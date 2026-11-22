@@ -153,3 +153,12 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Updated foundation contract checks, architecture and roadmap. Build-run creation remains unconnected to UI/execution pending the actual local runner design.
 
 - CI concurrency now cancels superseded validation for the same ref, preventing every rapid commit from leaving a long queue of obsolete Android/security builds. Only the latest revision is intended to consume the full validation slot.
+
+
+## 2026-11-22 — Hosted validation result and signing blocker
+
+- Latest observed branch commit: `da900373d1ea23d9b5d6ab71d7d1731badab9c6d`.
+- Ubuntu 22.04 runner diagnostic: passed. Foundation verifier: passed. Rust compilation for all configured Android ABIs: passed. Rust tests and lint: passed.
+- Android APK pipeline stopped at persistent Preview signing-key preparation because repository Actions secrets `POCKETFORGE_DEBUG_KEYSTORE_BASE64`, `POCKETFORGE_DEBUG_KEYSTORE_PASSWORD`, `POCKETFORGE_DEBUG_KEY_ALIAS`, and `POCKETFORGE_DEBUG_KEY_PASSWORD` are missing. Gradle Android assembly was not reached; no APK artifact was generated.
+- Do not weaken signing or use a new ephemeral key for an updateable Preview artifact. Configure the persistent signing secrets before rerunning the trusted APK pipeline.
+- Static cargo-deny/cargo-audit validation remains queued.
