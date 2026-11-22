@@ -8,7 +8,7 @@ required = [
     "CODEOWNERS", "docs/product/vision.md", "docs/product/personas.md",
     "docs/product/scope.md", "docs/product/roadmap.md",
     "docs/architecture/overview.md", "docs/architecture/data-model.md",
-    "docs/architecture/ffi-contract.md", "core/Cargo.toml",
+    "docs/architecture/ffi-contract.md", "docs/architecture/local-build-execution.md", "core/Cargo.toml",
     "android/app/build.gradle.kts", "ios/README.md",
     ".github/workflows/pipeline.yml", ".github/workflows/android.yml",
     ".github/workflows/security.yml",
