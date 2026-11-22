@@ -483,20 +483,20 @@ class MainActivity : Activity() {
 
     private fun showBuildAssessment(project: WorkspaceProject, assessment: BuildAssessment) {
         val message = buildString {
-            append("PROJECT PREFLIGHT · READ ONLY\\n\\n")
-            append("Detected: ${assessment.projectType}\\n")
-            append("Build system: ${assessment.buildSystem}\\n")
-            append("Gradle wrapper: ${if (assessment.hasGradleWrapperScript && assessment.hasGradleWrapperJar && assessment.gradleDistribution != null) "complete" else "incomplete"}\\n")
-            assessment.gradleDistribution?.let { append("Gradle distribution: $it\\n") }
-            if (assessment.modules.isNotEmpty()) append("Modules: ${assessment.modules.joinToString()}\\n")
-            append("\\nFINDINGS\\n")
-            append(assessment.findings.joinToString("\\n").ifBlank { "No build markers found." })
+            append("PROJECT PREFLIGHT · READ ONLY\n\n")
+            append("Detected: ${assessment.projectType}\n")
+            append("Build system: ${assessment.buildSystem}\n")
+            append("Gradle wrapper: ${if (assessment.hasGradleWrapperScript && assessment.hasGradleWrapperJar && assessment.gradleDistribution != null) "complete" else "incomplete"}\n")
+            assessment.gradleDistribution?.let { append("Gradle distribution: $it\n") }
+            if (assessment.modules.isNotEmpty()) append("Modules: ${assessment.modules.joinToString()}\n")
+            append("\nFINDINGS\n")
+            append(assessment.findings.joinToString("\n").ifBlank { "No build markers found." })
             if (assessment.blockers.isNotEmpty()) {
-                append("\\n\\nPROJECT BLOCKERS\\n")
-                append(assessment.blockers.joinToString("\\n") { "• $it" })
+                append("\n\nPROJECT BLOCKERS\n")
+                append(assessment.blockers.joinToString("\n") { "• $it" })
             }
-            if (assessment.scanTruncated) append("\\n\\nThe scan was capped for safety; inspect the full tree before relying on this result.")
-            append("\\n\\nIMPORTANT\\nThis is a structural assessment only. PocketForge has not executed project code, downloaded dependencies, changed files or attempted a build. The on-device Gradle/JDK/Android SDK build runner is the next implementation gate.")
+            if (assessment.scanTruncated) append("\n\nThe scan was capped for safety; inspect the full tree before relying on this result.")
+            append("\n\nIMPORTANT\nThis is a structural assessment only. PocketForge has not executed project code, downloaded dependencies, changed files or attempted a build. The on-device Gradle/JDK/Android SDK build runner is the next implementation gate.")
         }
         AlertDialog.Builder(this)
             .setTitle("Build assessment · ${project.name}")
