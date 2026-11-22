@@ -26,3 +26,10 @@ The second command cross-compiles the Rust FFI library for all supported Android
 CI builds the exact GitHub commit, compiles the Rust FFI library for all supported Android ABIs, runs Rust tests/lints, assembles and verifies the debug APK, then uploads the APK and SBOM with build provenance.
 
 CI cross-compilation does not prove on-device compilation. Phase 1 measures RAM, storage, thermal throttling, cancellation, process-death recovery and build duration on supported devices.
+
+
+## Imported-project preflight
+
+PocketForge's Android app can inspect a linked local project through its persisted Storage Access Framework grant. The **Assess build** action is a bounded, read-only structural scan; it identifies common Gradle/Android/Rust markers and reports missing wrapper/build files. It does not execute the project's Gradle wrapper or scripts. Do not treat this assessment as proof that the project can compile.
+
+The on-device execution environment is a separate Phase 1 deliverable. It must provision or explicitly discover a compatible JDK, Gradle distribution, Android SDK/build-tools and any required NDK/toolchains; enforce workspace-scoped file access; support cancellation and process-death recovery; capture real stdout/stderr and exit codes; and verify APK package metadata and signatures before exposing an artifact. A GitHub Actions build is optional and does not satisfy the local-build requirement.
