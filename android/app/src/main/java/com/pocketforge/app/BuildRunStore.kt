@@ -49,8 +49,14 @@ class BuildRunStore(context: Context) {
             "Build snapshot belongs to a different project."
         }
         if (snapshot != null) {
-            require(snapshot.snapshotId.isNotBlank() && snapshot.manifestSha256.matches(Regex("^[a-fA-F0-9]{64}$"))) {
-                "Build snapshot identity is incomplete."
+            val hashPattern = Regex("^[a-fA-F0-9]{64}$")
+            require(
+                snapshot.snapshotId.isNotBlank() &&
+                    snapshot.manifestSha256.matches(hashPattern) &&
+                    snapshot.sourceUriSha256.matches(hashPattern) &&
+                    snapshot.sourceRootIdSha256.matches(hashPattern)
+            ) {
+                "Build snapshot identity or source provenance is incomplete."
             }
         }
         val now = System.currentTimeMillis()
