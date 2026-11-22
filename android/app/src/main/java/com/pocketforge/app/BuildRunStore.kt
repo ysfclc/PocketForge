@@ -98,7 +98,7 @@ class BuildRunStore(context: Context) {
                     finishedAt = item.optLong("finishedAt").takeIf { it > 0 },
                     exitCode = if (item.has("exitCode") && !item.isNull("exitCode")) item.optInt("exitCode") else null,
                     logReference = item.optString("logReference").takeIf { it.isNotBlank() },
-                    outputArtifacts = buildList { for (i in 0 until artifacts.length()) artifacts.optString(i).takeIf { it.isNotBlank() }?.let(::add) },
+                    outputArtifacts = buildList { for (i in 0 until artifacts.length()) { val artifact = artifacts.optString(i); if (artifact.isNotBlank()) add(artifact) } },
                     failureReason = item.optString("failureReason").takeIf { it.isNotBlank() }
                 ))
             }
