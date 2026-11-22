@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: pocketforge-runner-diagnostic-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   runner-smoke:
