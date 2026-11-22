@@ -23,6 +23,7 @@ data class BuildRun(
     val snapshotId: String?,
     val manifestSha256: String?,
     val sourceUriSha256: String?,
+    val sourceRootIdSha256: String?,
     val sourceLastModified: Long?
 )
 
@@ -70,6 +71,7 @@ class BuildRunStore(context: Context) {
             snapshotId = snapshot?.snapshotId,
             manifestSha256 = snapshot?.manifestSha256,
             sourceUriSha256 = snapshot?.sourceUriSha256,
+            sourceRootIdSha256 = snapshot?.sourceRootIdSha256,
             sourceLastModified = snapshot?.sourceLastModified
         )
         write(readRuns() + run)
@@ -124,6 +126,7 @@ class BuildRunStore(context: Context) {
                     snapshotId = item.optString("snapshotId").takeIf { it.isNotBlank() },
                     manifestSha256 = item.optString("manifestSha256").takeIf { it.isNotBlank() },
                     sourceUriSha256 = item.optString("sourceUriSha256").takeIf { it.isNotBlank() },
+                    sourceRootIdSha256 = item.optString("sourceRootIdSha256").takeIf { it.isNotBlank() },
                     sourceLastModified = if (item.has("sourceLastModified") && !item.isNull("sourceLastModified")) item.optLong("sourceLastModified").takeIf { it > 0L } else null
                 ))
             }
@@ -150,6 +153,7 @@ class BuildRunStore(context: Context) {
                 put("snapshotId", run.snapshotId ?: "")
                 put("manifestSha256", run.manifestSha256 ?: "")
                 put("sourceUriSha256", run.sourceUriSha256 ?: "")
+                put("sourceRootIdSha256", run.sourceRootIdSha256 ?: "")
                 if (run.sourceLastModified == null) put("sourceLastModified", JSONObject.NULL)
                 else put("sourceLastModified", run.sourceLastModified)
             })
