@@ -159,6 +159,7 @@ object BuildPreflight {
             DocumentsContract.Document.COLUMN_MIME_TYPE
         )
         val result = ArrayList<Node>()
+        var wasTruncated = false
         context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
             val id = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
             val name = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
