@@ -103,3 +103,10 @@ The new connector source and static contract checks were committed to the featur
 - A failed verification deletes the just-created snapshot and prevents indexing. Successful UI confirmation reports the verified file count and size.
 - Expanded `scripts/verify-foundation.py` to enforce the verifier and UI wiring contract.
 - Source authored and repository contract assertions added. Android CI compilation and target-device mutation/tamper tests are pending; this entry is not a claim of a successful build or device acceptance.
+
+
+## Governance branch CI trigger — 2026-11-22
+
+- Added the active governance branch to push triggers for the Android pipeline and static security workflow.
+- Added the same branch push trigger to the minimal Ubuntu 22.04 runner-allocation diagnostic.
+- This ensures commits on the working branch receive compile/security/runner checks even if they are not currently the head of an open pull request. Trigger configuration is authored; run results are pending.
