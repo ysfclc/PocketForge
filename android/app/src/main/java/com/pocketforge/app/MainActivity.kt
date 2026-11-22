@@ -497,7 +497,9 @@ class MainActivity : Activity() {
                     expectedSnapshotId = prepared.id,
                     expectedManifestSha256 = prepared.manifestSha256,
                     expectedFileCount = prepared.fileCount,
-                    expectedTotalBytes = prepared.totalBytes
+                    expectedTotalBytes = prepared.totalBytes,
+                    expectedSourceUriSha256 = prepared.sourceUriSha256,
+                    expectedSourceRootIdSha256 = prepared.sourceRootIdSha256
                 )
                 if (!verification.valid) {
                     prepared.directory.deleteRecursively()
