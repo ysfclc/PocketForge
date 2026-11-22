@@ -233,6 +233,4 @@ object BuildPreflight {
         }.getOrNull()
     }
 
-    private fun findPath(paths: Set<String>, vararg names: String): String? =
-        paths.firstOrNull { path -> names.any { path.equals(it, true) } }
 }
