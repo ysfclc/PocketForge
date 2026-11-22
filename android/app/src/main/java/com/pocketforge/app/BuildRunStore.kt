@@ -19,7 +19,11 @@ data class BuildRun(
     val exitCode: Int?,
     val logReference: String?,
     val outputArtifacts: List<String>,
-    val failureReason: String?
+    val failureReason: String?,
+    val snapshotId: String?,
+    val manifestSha256: String?,
+    val sourceUriSha256: String?,
+    val sourceLastModified: Long?
 )
 
 class BuildRunStore(context: Context) {
@@ -32,9 +36,22 @@ class BuildRunStore(context: Context) {
     fun get(id: String): BuildRun? = readRuns().firstOrNull { it.id == id }
 
     @Synchronized
-    fun create(projectId: String, projectName: String, task: String = "assembleDebug"): BuildRun {
+    fun create(
+        projectId: String,
+        projectName: String,
+        task: String = "assembleDebug",
+        snapshot: StoredProjectSnapshot? = null
+    ): BuildRun {
         require(projectId.isNotBlank()) { "Build run requires a project ID." }
         require(task.isNotBlank()) { "Build run requires a task." }
+        require(snapshot == null || snapshot.projectId == projectId) {
+            "Build snapshot belongs to a different project."
+        }
+        if (snapshot != null) {
+            require(snapshot.snapshotId.isNotBlank() && snapshot.manifestSha256.matches(Regex("^[a-fA-F0-9]{64}$"))) {
+                "Build snapshot identity is incomplete."
+            }
+        }
         val now = System.currentTimeMillis()
         val run = BuildRun(
             id = UUID.randomUUID().toString(),
@@ -49,7 +66,11 @@ class BuildRunStore(context: Context) {
             exitCode = null,
             logReference = null,
             outputArtifacts = emptyList(),
-            failureReason = null
+            failureReason = null,
+            snapshotId = snapshot?.snapshotId,
+            manifestSha256 = snapshot?.manifestSha256,
+            sourceUriSha256 = snapshot?.sourceUriSha256,
+            sourceLastModified = snapshot?.sourceLastModified
         )
         write(readRuns() + run)
         return run
@@ -99,7 +120,11 @@ class BuildRunStore(context: Context) {
                     exitCode = if (item.has("exitCode") && !item.isNull("exitCode")) item.optInt("exitCode") else null,
                     logReference = item.optString("logReference").takeIf { it.isNotBlank() },
                     outputArtifacts = buildList { for (i in 0 until artifacts.length()) { val artifact = artifacts.optString(i); if (artifact.isNotBlank()) add(artifact) } },
-                    failureReason = item.optString("failureReason").takeIf { it.isNotBlank() }
+                    failureReason = item.optString("failureReason").takeIf { it.isNotBlank() },
+                    snapshotId = item.optString("snapshotId").takeIf { it.isNotBlank() },
+                    manifestSha256 = item.optString("manifestSha256").takeIf { it.isNotBlank() },
+                    sourceUriSha256 = item.optString("sourceUriSha256").takeIf { it.isNotBlank() },
+                    sourceLastModified = if (item.has("sourceLastModified") && !item.isNull("sourceLastModified")) item.optLong("sourceLastModified").takeIf { it > 0L } else null
                 ))
             }
         }
@@ -122,6 +147,11 @@ class BuildRunStore(context: Context) {
                 put("logReference", run.logReference ?: "")
                 put("outputArtifacts", JSONArray(run.outputArtifacts))
                 put("failureReason", run.failureReason ?: "")
+                put("snapshotId", run.snapshotId ?: "")
+                put("manifestSha256", run.manifestSha256 ?: "")
+                put("sourceUriSha256", run.sourceUriSha256 ?: "")
+                if (run.sourceLastModified == null) put("sourceLastModified", JSONObject.NULL)
+                else put("sourceLastModified", run.sourceLastModified)
             })
         }
         prefs.edit().putString(KEY_RUNS, array.toString()).commit()
