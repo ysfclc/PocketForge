@@ -172,3 +172,15 @@ The new connector source and static contract checks were committed to the featur
 - Commit `c4717167de7a1b7679628b57bea49bb780904ccb` PR pipeline: foundation checks passed, Rust compilation for all Android ABIs passed, Rust tests/Clippy passed; Android Kotlin compile failed during Gradle dependency resolution because Maven Central returned HTTP 429 for `com.google.code.findbugs:jsr305:3.0.2`. This is an external repository throttling error, not a source compiler diagnostic.
 - Added bounded retry (3 attempts with 20s then 40s delay) to both `:app:compileDebugKotlin` and `assembleDebug` to improve resilience to transient repository rate limits. Retries remain bounded and do not suppress persistent failures.
 - Follow-up CI on retry commit is pending; no success claim for this retry change until runs complete.
+
+
+## CI retry fix verified — 2026-11-23
+
+- Source commit: `a7831db058ad13b14a1910f2a6e8bc9f9a00abbf`.
+- PR #2 pipeline run 45123921939 passed: foundation contracts, Rust cross-compilation for arm64-v8a/armeabi-v7a/x86_64, Rust tests and Clippy, Kotlin compilation, Android Preview APK assembly, signature verification, SBOM generation and build provenance attestation.
+- Supply-chain security run 45123915487 passed on the same source commit: actionlint, foundation verification, cargo-deny policy checks and cargo-audit.
+- Hosted runner diagnostic run 45123921938 passed.
+- The bounded Gradle retry/backoff successfully allowed Kotlin compilation and APK assembly to complete after the earlier Maven Central HTTP 429 incident. Persistent failures remain fatal after the bounded attempts.
+- PR Preview artifact ID 14795062280; APK SHA-256 `49a381552660c040c3de3f40d0e85a8d5d376626d833c510487685b1dc074f3f`. Build provenance: https://github.com/ysfclc/PocketForge/attestations/70958638.
+- Signing caveat confirmed in the build log: fork PRs cannot access private Preview signing secrets and used a temporary runner debug key; certificate SHA-256 `debce42c2271dbb0f0e0663247329892e3f569afd5e5a60f56efac352c885f9f`. APK signature is valid but it is not update-safe across Preview builds.
+- Physical-device acceptance is not claimed. Imported-project execution and toolchain provisioning remain unimplemented. PR #2 remains open, draft and unmerged.
