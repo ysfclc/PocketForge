@@ -178,3 +178,10 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Successful supply-chain security run: https://github.com/ysfclc/PocketForge/actions/runs/45062059829. actionlint, foundation verification, cargo-deny policy checks and cargo-audit all passed.
 - The matching push pipeline run 45062056610 failed only at persistent signing-key preparation because the four `POCKETFORGE_DEBUG_*` secrets are missing; Rust and Kotlin compilation had already passed. The PR run used the explicit fork-PR temporary-key fallback.
 - No physical-device installation/acceptance is claimed. Imported-project build execution, local toolchain provisioning and process supervision remain unimplemented. PR #2 remains open, draft and unmerged.
+
+
+## CI dependency throttling incident — 2026-11-22
+
+- Commit `c4717167de7a1b7679628b57bea49bb780904ccb` PR pipeline: foundation checks passed, Rust compilation for all Android ABIs passed, Rust tests/Clippy passed; Android Kotlin compile failed during Gradle dependency resolution because Maven Central returned HTTP 429 for `com.google.code.findbugs:jsr305:3.0.2`. This is an external repository throttling error, not a source compiler diagnostic.
+- Added bounded retry (3 attempts with 20s then 40s delay) to both `:app:compileDebugKotlin` and `assembleDebug` to improve resilience to transient repository rate limits. Retries remain bounded and do not suppress persistent failures.
+- Follow-up CI on retry commit is pending; no success claim for this retry change until runs complete.
