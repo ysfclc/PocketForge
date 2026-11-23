@@ -1,11 +1,14 @@
 package com.pocketforge.app
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.After
+import org.junit.Before
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,6 +19,20 @@ class RuntimeProcessProbeInstrumentedTest {
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
     private val prefs get() = context.getSharedPreferences(ProcessExecutionProbeService.PREFS, 0)
+    private var activity: Activity? = null
+
+    @Before
+    fun launchPocketForge() {
+        activity = instrumentation.startActivitySync(
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
+
+    @After
+    fun closePocketForge() {
+        activity?.finish()
+        activity = null
+    }
 
     @Test
     fun childArtRuntimeAndNativeProcessComplete() {
