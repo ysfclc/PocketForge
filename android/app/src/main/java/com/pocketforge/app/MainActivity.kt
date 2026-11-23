@@ -37,8 +37,6 @@ class MainActivity : Activity() {
 
     private enum class Tab { WORKSPACE, MISSIONS, FACTORY }
 
-    private companion object { const val PROCESS_PROBE_NOTIFICATION_REQUEST = 7315 }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = WorkspaceStore(this)
@@ -1267,6 +1265,7 @@ class MainActivity : Activity() {
     private external fun nativeHealthCheck(): Int
 
     companion object {
+        private const val PROCESS_PROBE_NOTIFICATION_REQUEST = 7315
         private const val REQUEST_FOLDER = 701
     }
 }
