@@ -6,12 +6,20 @@ SDKMANAGER="$(command -v sdkmanager || printf '%s' "$SDK_ROOT/cmdline-tools/late
 AVDMANAGER="$(command -v avdmanager || printf '%s' "$SDK_ROOT/cmdline-tools/latest/bin/avdmanager")"
 EMULATOR="$SDK_ROOT/emulator/emulator"
 AVD_NAME="pocketforge-art-probe-api35"
+export ANDROID_AVD_HOME="${RUNNER_TEMP:-/tmp}/pocketforge-avd-home"
+mkdir -p "$ANDROID_AVD_HOME"
 IMAGE="system-images;android-35;google_apis;x86_64"
 LOG_FILE="${RUNNER_TEMP:-/tmp}/pocketforge-emulator.log"
 
 yes | "$SDKMANAGER" --licenses >/dev/null || true
 "$SDKMANAGER" --install "emulator" "$IMAGE"
-printf 'no\n' | "$AVDMANAGER" create avd --force --name "$AVD_NAME" --package "$IMAGE" --device pixel_2
+printf 'no\n' | "$AVDMANAGER" create avd --force --name "$AVD_NAME" --package "$IMAGE" --device pixel_2 --path "$ANDROID_AVD_HOME/$AVD_NAME.avd"
+"$AVDMANAGER" list avd
+if [[ ! -s "$ANDROID_AVD_HOME/$AVD_NAME.ini" ]]; then
+  find "$ANDROID_AVD_HOME" -maxdepth 2 -type f -print || true
+  echo "avdmanager did not create the expected AVD configuration."
+  exit 1
+fi
 
 "$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data \
   -gpu swiftshader -accel auto -memory 2048 -cores 2 -no-metrics -no-snapshot-load -no-snapshot-save \
