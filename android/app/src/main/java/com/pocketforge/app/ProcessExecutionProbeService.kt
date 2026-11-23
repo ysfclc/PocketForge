@@ -9,6 +9,8 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import java.io.File
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Debug/preview feasibility spike. Fixed harmless binaries only; no caller-supplied commands. */
@@ -32,7 +34,7 @@ class ProcessExecutionProbeService : Service() {
         if (worker?.isAlive == true) return START_NOT_STICKY
         cancelled.set(false)
         interruptionRequested = false
-        persist(STATE_RUNNING, "Starting fixed Android child-process probe…", null)
+        persist(STATE_RUNNING, "Starting Android ART and child-process probes…", null)
         val notification = buildNotification("Launching harmless system process")
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
@@ -45,6 +47,8 @@ class ProcessExecutionProbeService : Service() {
 
     private fun runProbe() {
         try {
+            val runtime = runArtRuntimeProbe()
+            if (cancelled.get()) return
             val identity = runFixedCommand("/system/bin/id")
             if (cancelled.get()) return
             if (identity.exitCode != 0) error("System identity process failed with exit " + identity.exitCode)
@@ -54,7 +58,7 @@ class ProcessExecutionProbeService : Service() {
             if (interruptionRequested) {
                 persist(STATE_INTERRUPTED, "Android stopped the process probe.", null)
             } else if (cancelled.get()) {
-                persist(STATE_CANCELLED, identity.output, exit)
+                persist(STATE_CANCELLED, runtime.output + "\\n" + identity.output, exit)
             } else if (exit == 0) {
                 persist(STATE_SUCCEEDED, identity.output + "\nForeground process survived the 30-second wait.", exit)
             } else {
@@ -73,6 +77,37 @@ class ProcessExecutionProbeService : Service() {
     }
 
     private data class CommandResult(val output: String, val exitCode: Int)
+
+    private fun runArtRuntimeProbe(): CommandResult {
+        val outputFile = File(cacheDir, "art-runtime-probe.txt")
+        if (outputFile.exists()) outputFile.delete()
+        val process = ProcessBuilder(
+            "/system/bin/app_process",
+            "/system/bin",
+            "com.pocketforge.app.RuntimeProcessProbe"
+        ).redirectErrorStream(true).redirectOutput(outputFile).also {
+            it.environment()["CLASSPATH"] = applicationInfo.sourceDir
+        }.start()
+        child = process
+        val completed = process.waitFor(10, TimeUnit.SECONDS)
+        if (!completed) {
+            process.destroyForcibly()
+            process.waitFor(2, TimeUnit.SECONDS)
+            child = null
+            outputFile.delete()
+            error("Android ART child runtime did not exit within 10 seconds.")
+        }
+        child = null
+        val output = if (outputFile.isFile) {
+            outputFile.inputStream().use { it.readBytes().toString(Charsets.UTF_8).take(2048) }
+        } else ""
+        outputFile.delete()
+        check(process.exitValue() == 0) { "Android ART child runtime exited with " + process.exitValue() + ": " + output }
+        check(output.contains("POCKETFORGE_ART_RUNTIME_OK") && output.contains("java.vm.name=")) {
+            "Android ART child runtime returned an unexpected result: " + output
+        }
+        return CommandResult(output.trim(), process.exitValue())
+    }
 
     private fun runFixedCommand(path: String): CommandResult {
         check(path == "/system/bin/id") { "Probe command is not allow-listed." }
