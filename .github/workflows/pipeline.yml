@@ -70,9 +70,23 @@ jobs:
           cargo +1.82.0 test --workspace --locked
           cargo +1.82.0 clippy --workspace --all-targets --locked -- -D warnings
 
-      - name: Compile Android Kotlin sources
+      - name: Compile Android Kotlin sources (retry transient repository throttling)
         working-directory: android
-        run: gradle --no-daemon --stacktrace :app:compileDebugKotlin
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gradle --no-daemon --stacktrace :app:compileDebugKotlin; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              delay=$((attempt * 20))
+              echo "::warning::Gradle compile attempt $attempt failed; retrying after ${delay}s for transient dependency repository errors."
+              sleep "$delay"
+            fi
+          done
+          echo "::error::Gradle Kotlin compilation failed after 3 attempts."
+          exit 1
 
       - name: Prepare persistent Preview signing key
         shell: bash
@@ -97,13 +111,27 @@ jobs:
           echo "ORG_GRADLE_PROJECT_previewStoreFile=$RUNNER_TEMP/pocketforge-preview-debug.p12" >> "$GITHUB_ENV"
           unset PREVIEW_KEYSTORE_BASE64
 
-      - name: Assemble Android Preview APK
+      - name: Assemble Android Preview APK (retry transient repository throttling)
         working-directory: android
         env:
           ORG_GRADLE_PROJECT_previewStorePassword: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_previewKeyAlias: ${{ secrets.POCKETFORGE_DEBUG_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_previewKeyPassword: ${{ secrets.POCKETFORGE_DEBUG_KEY_PASSWORD }}
-        run: gradle --no-daemon --stacktrace assembleDebug
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gradle --no-daemon --stacktrace assembleDebug; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              delay=$((attempt * 20))
+              echo "::warning::Gradle assembly attempt $attempt failed; retrying after ${delay}s for transient dependency repository errors."
+              sleep "$delay"
+            fi
+          done
+          echo "::error::Gradle APK assembly failed after 3 attempts."
+          exit 1
 
       - name: Remove Preview signing material
         if: always()
