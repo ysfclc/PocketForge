@@ -202,6 +202,26 @@ gitignore = Path(".gitignore").read_text()
 assert "*.p12" in gitignore and "*.jks" in gitignore, "Private signing keystores must be ignored"
 manifest = Path("android/app/src/main/AndroidManifest.xml").read_text()
 assert "android.permission.INTERNET" in manifest, "GitHub API requires INTERNET permission"
+
+# Process execution feasibility remains a fixed-command Preview-only spike.
+debug_manifest_path = Path("android/app/src/debug/AndroidManifest.xml")
+probe_path = Path("android/app/src/main/java/com/pocketforge/app/ProcessExecutionProbeService.kt")
+assert debug_manifest_path.is_file() and probe_path.is_file(), "Missing Android process probe"
+debug_manifest = debug_manifest_path.read_text()
+probe_source = probe_path.read_text()
+assert "ProcessExecutionProbeService" not in manifest, "Process probe must not be declared in the release manifest"
+for contract in ("FOREGROUND_SERVICE_SPECIAL_USE", 'android:foregroundServiceType="specialUse"',
+                 "PROPERTY_SPECIAL_USE_FGS_SUBTYPE", "ProcessExecutionProbeService"):
+    assert contract in debug_manifest, f"Preview process probe manifest missing: {contract}"
+for contract in ("class ProcessExecutionProbeService", 'check(path == "/system/bin/id")',
+                 'ProcessBuilder(path)', 'ProcessBuilder("/system/bin/sleep", "30")',
+                 "startForeground", "ACTION_CANCEL", "STATE_INTERRUPTED",
+                 "output.take(4096)", "FOREGROUND_SERVICE_TYPE_SPECIAL_USE"):
+    assert contract in probe_source, f"Process probe safety/lifecycle contract missing: {contract}"
+for forbidden in ("intent.getStringExtra", "ProcessBuilder(\"/system/bin/sh\"", "Runtime.getRuntime().exec"):
+    assert forbidden not in probe_source, f"Process probe must not accept or invoke arbitrary commands: {forbidden}"
+for contract in ("ANDROID PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
+    assert contract in app, f"Preview Factory process probe UI missing: {contract}"
 assert r"\${" not in app, "Kotlin interpolation is accidentally escaped"
 assert r"\\n" not in app, "Kotlin dialog newlines are double-escaped"
 
