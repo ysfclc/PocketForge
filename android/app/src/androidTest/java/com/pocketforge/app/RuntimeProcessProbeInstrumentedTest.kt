@@ -46,6 +46,7 @@ class RuntimeProcessProbeInstrumentedTest {
         assertTrue("ART VM version missing: $output", output.contains("java.vm.version="))
         assertTrue("Native process identity missing: $output", output.contains("uid="))
         assertEquals(0, prefs.getInt(ProcessExecutionProbeService.KEY_EXIT, Int.MIN_VALUE))
+        awaitServiceStopped()
     }
 
     @Test
@@ -61,6 +62,16 @@ class RuntimeProcessProbeInstrumentedTest {
         awaitState(ProcessExecutionProbeService.STATE_CANCELLED, 5_000)
         assertEquals(ProcessExecutionProbeService.STATE_CANCELLED,
             prefs.getString(ProcessExecutionProbeService.KEY_STATE, null))
+        awaitServiceStopped()
+    }
+
+    private fun awaitServiceStopped() {
+        val deadline = System.currentTimeMillis() + 5_000
+        while (ProcessExecutionProbeService.isActive && System.currentTimeMillis() < deadline) {
+            Thread.sleep(100)
+        }
+        assertTrue("Probe service did not stop", !ProcessExecutionProbeService.isActive)
+        Thread.sleep(250)
     }
 
     private fun grantNotificationPermission() {
