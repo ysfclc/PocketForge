@@ -58,11 +58,11 @@ class ProcessExecutionProbeService : Service() {
             if (interruptionRequested) {
                 persist(STATE_INTERRUPTED, "Android stopped the process probe.", null)
             } else if (cancelled.get()) {
-                persist(STATE_CANCELLED, runtime.output + "\\n" + identity.output, exit)
+                persist(STATE_CANCELLED, runtime.output + "\n" + identity.output, exit)
             } else if (exit == 0) {
-                persist(STATE_SUCCEEDED, identity.output + "\nForeground process survived the 30-second wait.", exit)
+                persist(STATE_SUCCEEDED, runtime.output + "\n" + identity.output + "\nForeground process survived the 30-second wait.", exit)
             } else {
-                persist(STATE_FAILED, identity.output + "\nSleep process exited with " + exit, exit)
+                persist(STATE_FAILED, runtime.output + "\n" + identity.output + "\nSleep process exited with " + exit, exit)
             }
         } catch (error: Throwable) {
             if (interruptionRequested) persist(STATE_INTERRUPTED, "Android stopped the process probe.", null)
