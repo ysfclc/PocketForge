@@ -230,6 +230,28 @@ for contract in ("POCKETFORGE_ART_RUNTIME_OK", "java.vm.name=", "java.vm.version
 for contract in ('if (packageName.endsWith(".preview"))', "ANDROID ART + PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
     assert contract in app, f"Preview-only Factory process probe UI missing: {contract}"
 assert "POST_NOTIFICATIONS" in debug_manifest, "Preview process probe must request notification permission"
+
+# Exercise the child ART process and service lifecycle on a real Android emulator in PR CI.
+android_build = Path("android/app/build.gradle.kts").read_text()
+instrumented_test_path = Path("android/app/src/androidTest/java/com/pocketforge/app/RuntimeProcessProbeInstrumentedTest.kt")
+assert instrumented_test_path.is_file(), "Missing Android process probe instrumentation tests"
+instrumented_test = instrumented_test_path.read_text()
+for contract in ("AndroidJUnit4", "startActivitySync", "startForegroundService",
+                 "POCKETFORGE_ART_RUNTIME_OK", "java.vm.name=", "java.vm.version=",
+                 "notificationActionCancelsTheChildProcess", "grantRuntimePermission"):
+    assert contract in instrumented_test, f"Android process probe instrumentation test missing: {contract}"
+for contract in ("testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"",
+                 'androidTestImplementation("androidx.test:runner:1.6.2")',
+                 'androidTestImplementation("androidx.test.ext:junit:1.2.1")'):
+    assert contract in android_build, f"Android instrumentation configuration missing: {contract}"
+emulator_script_path = Path("scripts/test-android-probe-emulator.sh")
+assert emulator_script_path.is_file(), "Missing Android emulator process probe runner"
+emulator_script = emulator_script_path.read_text()
+for contract in ("system-images;android-35;google_apis;x86_64", "avdmanager create avd",
+                 "emulator -avd", "adb wait-for-device", "connectedDebugAndroidTest"):
+    assert contract in emulator_script, f"Android emulator test runner missing: {contract}"
+assert "Run ART runtime and process supervision tests on Android emulator" in pipeline
+assert "if: github.event_name == 'pull_request'" in pipeline
 for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
     assert contract in app, f"Process probe notification permission flow missing: {contract}"
 for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
