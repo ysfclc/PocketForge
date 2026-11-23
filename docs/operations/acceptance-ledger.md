@@ -184,3 +184,12 @@ The new connector source and static contract checks were committed to the featur
 - PR Preview artifact ID 14795062280; APK SHA-256 `49a381552660c040c3de3f40d0e85a8d5d376626d833c510487685b1dc074f3f`. Build provenance: https://github.com/ysfclc/PocketForge/attestations/70958638.
 - Signing caveat confirmed in the build log: fork PRs cannot access private Preview signing secrets and used a temporary runner debug key; certificate SHA-256 `debce42c2271dbb0f0e0663247329892e3f569afd5e5a60f56efac352c885f9f`. APK signature is valid but it is not update-safe across Preview builds.
 - Physical-device acceptance is not claimed. Imported-project execution and toolchain provisioning remain unimplemented. PR #2 remains open, draft and unmerged.
+
+
+## 2026-11-23 — Android process probe compiled; Preview signing remains blocked
+
+- Current source commit `002aa909c1d4cf21c0489c4f6f4c3466ee9896e8` passed the foundation verifier, Rust cross-compilation for arm64-v8a/armeabi-v7a/x86_64, Rust tests and Clippy, and `:app:compileDebugKotlin` in hosted pipeline run https://github.com/ysfclc/PocketForge/actions/runs/45125579701.
+- The Kotlin process-execution feasibility spike compiles. It remains a fixed-command Preview-only probe (`/system/bin/id`, `/system/bin/sleep 30`), not a Java/Gradle executor. No physical-device execution has been verified.
+- The same push run failed at `Prepare persistent Preview signing key`: all four `POCKETFORGE_DEBUG_*` values were empty in the trusted push workflow. APK assembly, signature verification, SBOM and artifact upload were skipped. Do not classify the Preview artifact as persistent/update-safe.
+- This is distinct from Release signing, which uses the four `ANDROID_*` secrets in `.github/workflows/android.yml`, targets protected `main`, and is manually dispatched. No Release workflow was run from this feature branch.
+- Physical Android acceptance and the next execution gate (a pinned Java runtime probe, then a harmless Gradle diagnostic against a verified snapshot) remain pending.
