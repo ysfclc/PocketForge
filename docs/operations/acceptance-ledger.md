@@ -193,3 +193,14 @@ The new connector source and static contract checks were committed to the featur
 - The same push run failed at `Prepare persistent Preview signing key`: all four `POCKETFORGE_DEBUG_*` values were empty in the trusted push workflow. APK assembly, signature verification, SBOM and artifact upload were skipped. Do not classify the Preview artifact as persistent/update-safe.
 - This is distinct from Release signing, which uses the four `ANDROID_*` secrets in `.github/workflows/android.yml`, targets protected `main`, and is manually dispatched. No Release workflow was run from this feature branch.
 - Physical Android acceptance and the next execution gate (a pinned Java runtime probe, then a harmless Gradle diagnostic against a verified snapshot) remain pending.
+
+
+## 2026-11-23 — Child ART runtime probe compiled and packaged
+
+- Added a fixed, side-effect-free Java entry point `RuntimeProcessProbe` and extended the Preview-only process service to launch it from the app APK using `/system/bin/app_process` with the APK as `CLASSPATH`, a 10-second timeout, and bounded output capture. The probe reports Java runtime properties and a success marker before the existing fixed `/system/bin/id` and `/system/bin/sleep 30` checks.
+- Clarified in the Factory UI and architecture docs that Android ART is not a standalone OpenJDK/JDK and that this does not establish Gradle compatibility. No project code is executed.
+- Foundation verifier passed on commit `546f7007a7f131934cd53311bf5102bc28541b2a` in security workflow run https://github.com/ysfclc/PocketForge/actions/runs/45181745089. Hosted runner diagnostic passed.
+- PR Android pipeline run https://github.com/ysfclc/PocketForge/actions/runs/45181745077 passed Rust builds for all three Android ABIs, Rust tests/Clippy, Kotlin compilation, APK assembly, APK signature verification, SBOM generation and provenance attestation. The APK contains `RuntimeProcessProbe` and the `POCKETFORGE_ART_RUNTIME_OK` marker.
+- APK artifact ID `14820713553`; APK SHA-256 `27f79929a32df1574cdf8694bb91066eef2facb86b0ec522a322897e1dbbe99e`; signer certificate SHA-256 `158c274d2f4502dfa1088c28e47374ad9e33b03c873627ef51c440ae5a3ca40e`. This is the PR's temporary Android debug key, not the persistent Preview PKCS12 key; it is not safe for in-place updates. Build provenance attestation: https://github.com/ysfclc/PocketForge/attestations/71104390. SBOM artifact ID `14821517465`.
+- Trusted push pipeline run `45181735470` compiled Kotlin successfully but stopped because the four `POCKETFORGE_DEBUG_*` secrets are absent. Thus no trusted persistent-key Preview APK was produced. This is separate from the user's Release `ANDROID_*` signing setup.
+- Physical-device execution remains untested. Next gate is the user-run Preview acceptance procedure for app_process/ART, process survival, notification, cancellation and interruption. Only after that device evidence should a pinned standalone JDK/Gradle runtime spike begin.
