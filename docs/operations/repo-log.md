@@ -185,3 +185,14 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Commit `c4717167de7a1b7679628b57bea49bb780904ccb` PR pipeline: foundation checks passed, Rust compilation for all Android ABIs passed, Rust tests/Clippy passed; Android Kotlin compile failed during Gradle dependency resolution because Maven Central returned HTTP 429 for `com.google.code.findbugs:jsr305:3.0.2`. This is an external repository throttling error, not a source compiler diagnostic.
 - Added bounded retry (3 attempts with 20s then 40s delay) to both `:app:compileDebugKotlin` and `assembleDebug` to improve resilience to transient repository rate limits. Retries remain bounded and do not suppress persistent failures.
 - Follow-up CI on retry commit is pending; no success claim for this retry change until runs complete.
+
+
+## 2026-11-23 — Gradle throttling resilience verified
+
+- Current source commit: `a7831db058ad13b14a1910f2a6e8bc9f9a00abbf`.
+- PR pipeline #45123921939 passed end-to-end: foundation checks, all three Rust Android ABIs, Rust tests/Clippy, Kotlin compilation, Android APK assembly/signature verification, SBOM and provenance.
+- Supply-chain security #45123915487 passed on the same commit; hosted runner diagnostic #45123921938 passed.
+- The bounded Gradle retry/backoff fixed the earlier transient Maven Central HTTP 429 failure without weakening failure handling.
+- Preview APK artifact 14795062280, SHA-256 `49a381552660c040c3de3f40d0e85a8d5d376626d833c510487685b1dc074f3f`; attestation https://github.com/ysfclc/PocketForge/attestations/70958638.
+- Fork PR signing fallback remains temporary and non-update-safe (certificate SHA-256 `debce42c2271dbb0f0e0663247329892e3f569afd5e5a60f56efac352c885f9f`). No device acceptance claimed.
+- Next phase: build a debug-only Android process-execution feasibility probe. It must use fixed harmless commands only, a user-visible foreground service, persisted results and cancellation; it must not execute project scripts or expose a general shell. Device validation is required before selecting the production local runner.
