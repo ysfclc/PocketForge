@@ -10,9 +10,11 @@ It is not a build runner. It does not prove that a JDK, Gradle, Android SDK tool
 
 The Preview build exposes **Run process probe** in Factory. The service is declared only in `src/debug/AndroidManifest.xml` and uses Android's `specialUse` foreground-service type with a declared local-process-probe subtype.
 
-The only launched binaries are fixed absolute Android system paths:
+The probe first starts a fixed Java entry point from PocketForge's own APK using `/system/bin/app_process` and the `CLASSPATH` environment variable. `RuntimeProcessProbe` prints the Android runtime's Java properties and a success marker, with a 10-second process timeout. This tests a child ART runtime loading a class from the app APK; it is not a standalone OpenJDK/JDK distribution and cannot establish Gradle compatibility.
 
-1. `/system/bin/id` to prove that a child process can start and return output/exit status.
+It then launches two fixed absolute Android system paths:
+
+1. `/system/bin/id` to prove that a native child process can start and return output/exit status.
 2. `/system/bin/sleep 30` to keep a harmless child alive long enough to test app backgrounding and cancellation.
 
 No command, executable path, project path, Gradle task, or shell source is accepted from an Intent, UI input, project, model, or network. No shell is launched. No imported project content is read or executed. The service is not declared in the release manifest.
@@ -25,12 +27,13 @@ Run this only on the target Android phone using a Preview APK:
 
 1. Open Factory and tap **Run process probe**.
 2. Confirm the state changes to running and the ongoing PocketForge notification appears.
-3. Send PocketForge to the background for at least 10 seconds; do not force-stop it.
-4. Return to PocketForge. Confirm the Factory screen still reports running or the completed result, without losing the run record.
-5. Let the 30-second wait finish. Confirm success, a zero exit code and the `id` output are visible.
-6. Start a second probe and cancel it from the notification. Confirm the state becomes cancelled and the service notification disappears.
-7. Repeat once while rotating/recreating the Activity if supported by the device configuration.
-8. Separately force-stop the app only as a destructive interruption test. On reopening, a stale running state must be reported as interrupted; the probe must not replay automatically.
+3. Confirm the completed output contains `POCKETFORGE_ART_RUNTIME_OK`, `java.vm.name`, `java.vm.version`, and the `id` output.
+4. Send PocketForge to the background for at least 10 seconds; do not force-stop it.
+5. Return to PocketForge. Confirm the Factory screen still reports running or the completed result, without losing the run record.
+6. Let the 30-second wait finish. Confirm success and a zero exit code.
+7. Start a second probe and cancel it from the notification. Confirm the state becomes cancelled and the service notification disappears.
+8. Repeat once while rotating/recreating the Activity if supported by the device configuration.
+9. Separately force-stop the app only as a destructive interruption test. On reopening, a stale running state must be reported as interrupted; the probe must not replay automatically.
 
 Record device model, Android version, outcome for each step, and any notification/foreground-service restriction. A CI compile is not device acceptance.
 
