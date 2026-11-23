@@ -204,3 +204,12 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Hosted run `45125579701` on `002aa909c1d4cf21c0489c4f6f4c3466ee9896e8`: foundation checks, Rust ABI builds/tests/Clippy and Kotlin compilation passed. Persistent Preview signing preparation failed because the four `POCKETFORGE_DEBUG_*` secrets were unavailable; APK assembly and downstream artifact steps were skipped.
 - This does not contradict the user's separate Release signing setup: the Release workflow uses `ANDROID_*` secrets on protected `main` and is manually dispatched. Neither workflow's secret values are exposed to the repository review.
 - No device execution claim. Next technical gate remains a controlled Java runtime probe on-device, followed by a harmless Gradle diagnostic against a verified private snapshot. PR #2 stays open/draft/unmerged.
+
+
+## 2026-11-23 — Child ART runtime probe source and CI evidence
+
+- Added `RuntimeProcessProbe.java`, a fixed Java entry point with no inputs or side effects. Preview process service starts it through `/system/bin/app_process`, passes only the app APK as `CLASSPATH`, caps execution at 10 seconds and records its Java runtime properties before the fixed `id` and `sleep` child-process checks.
+- Updated Factory UI and execution architecture to distinguish Android ART from a standalone JDK. The code does not run Gradle or imported project code.
+- On commit `546f7007a7f131934cd53311bf5102bc28541b2a`, the foundation verifier passed. PR Android pipeline #45181745077 passed Rust ABI builds/tests/lints, Kotlin compilation, APK assembly, APK signature verification, SBOM and provenance. Artifact 14820713553, APK SHA-256 `27f79929a32df1574cdf8694bb91066eef2facb86b0ec522a322897e1dbbe99e`, temporary debug signer fingerprint `158c274d2f4502dfa1088c28e47374ad9e33b03c873627ef51c440ae5a3ca40e`, attestation 71104390.
+- The PR artifact uses a temporary Android debug key and is not update-safe. Trusted push pipeline #45181735470 confirms persistent Preview secrets `POCKETFORGE_DEBUG_*` are missing; it compiled Kotlin but did not produce an APK. This does not affect the separate Release signing workflow's `ANDROID_*` credentials.
+- Physical-device ART/process acceptance remains pending. Do not proceed to standalone JDK/Gradle provisioning until the Preview device probe has real-device evidence. PR #2 remains open/draft/unmerged.
