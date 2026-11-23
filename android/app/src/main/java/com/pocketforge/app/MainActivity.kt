@@ -37,6 +37,8 @@ class MainActivity : Activity() {
 
     private enum class Tab { WORKSPACE, MISSIONS, FACTORY }
 
+    private companion object { const val PROCESS_PROBE_NOTIFICATION_REQUEST = 7315 }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = WorkspaceStore(this)
@@ -242,6 +244,29 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun requestProbePermissionOrStart() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), PROCESS_PROBE_NOTIFICATION_REQUEST)
+            return
+        }
+        val intent = Intent(this, ProcessExecutionProbeService::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
+        Toast.makeText(this, "Process probe started", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PROCESS_PROBE_NOTIFICATION_REQUEST) {
+            if (grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestProbePermissionOrStart()
+            } else {
+                Toast.makeText(this, "Notification permission is needed to monitor and cancel the process probe.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun renderFactory() {
         val projects = store.projects()
         val hasLocalFolder = projects.any { it.folderUri != null }
@@ -286,9 +311,7 @@ class MainActivity : Activity() {
                 addView(space(12))
                 addView(pillButton(if (probeState == ProcessExecutionProbeService.STATE_RUNNING) "Probe running…" else "Run process probe", true) {
                     if (probeState != ProcessExecutionProbeService.STATE_RUNNING) {
-                        val intent = Intent(this@MainActivity, ProcessExecutionProbeService::class.java)
-                        if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
-                        Toast.makeText(this@MainActivity, "Process probe started", Toast.LENGTH_SHORT).show()
+                        requestProbePermissionOrStart()
                     }
                 })
             })
