@@ -220,9 +220,11 @@ for contract in ("class ProcessExecutionProbeService", 'check(path == "/system/b
     assert contract in probe_source, f"Process probe safety/lifecycle contract missing: {contract}"
 for forbidden in ("intent.getStringExtra", "ProcessBuilder(\"/system/bin/sh\"", "Runtime.getRuntime().exec"):
     assert forbidden not in probe_source, f"Process probe must not accept or invoke arbitrary commands: {forbidden}"
-for contract in ("if (BuildConfig.DEBUG)", "ANDROID PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
+for contract in ('if (packageName.endsWith(".preview"))', "ANDROID PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
     assert contract in app, f"Preview-only Factory process probe UI missing: {contract}"
 assert "POST_NOTIFICATIONS" in debug_manifest, "Preview process probe must request notification permission"
+for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
+    assert contract in app, f"Process probe notification permission flow missing: {contract}"
 for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
     assert contract in app, f"Process probe notification permission flow missing: {contract}"
 
