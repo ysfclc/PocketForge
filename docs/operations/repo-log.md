@@ -196,3 +196,11 @@ A local mirror of the original foundation layout passed `scripts/verify-foundati
 - Preview APK artifact 14795062280, SHA-256 `49a381552660c040c3de3f40d0e85a8d5d376626d833c510487685b1dc074f3f`; attestation https://github.com/ysfclc/PocketForge/attestations/70958638.
 - Fork PR signing fallback remains temporary and non-update-safe (certificate SHA-256 `debce42c2271dbb0f0e0663247329892e3f569afd5e5a60f56efac352c885f9f`). No device acceptance claimed.
 - Next phase: build a debug-only Android process-execution feasibility probe. It must use fixed harmless commands only, a user-visible foreground service, persisted results and cancellation; it must not execute project scripts or expose a general shell. Device validation is required before selecting the production local runner.
+
+
+## 2026-11-23 — Process probe source/CI checkpoint
+
+- Reviewed the Preview-only process probe service, debug manifest, Factory UI and local execution architecture. The service uses only fixed system binaries, foreground notification, bounded persisted output, cancellation and interrupted-state handling. The release manifest does not declare the service.
+- Hosted run `45125579701` on `002aa909c1d4cf21c0489c4f6f4c3466ee9896e8`: foundation checks, Rust ABI builds/tests/Clippy and Kotlin compilation passed. Persistent Preview signing preparation failed because the four `POCKETFORGE_DEBUG_*` secrets were unavailable; APK assembly and downstream artifact steps were skipped.
+- This does not contradict the user's separate Release signing setup: the Release workflow uses `ANDROID_*` secrets on protected `main` and is manually dispatched. Neither workflow's secret values are exposed to the repository review.
+- No device execution claim. Next technical gate remains a controlled Java runtime probe on-device, followed by a harmless Gradle diagnostic against a verified private snapshot. PR #2 stays open/draft/unmerged.
