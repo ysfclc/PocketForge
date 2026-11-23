@@ -16,6 +16,7 @@ class ProcessExecutionProbeService : Service() {
     private val cancelled = AtomicBoolean(false)
     @Volatile private var child: Process? = null
     @Volatile private var worker: Thread? = null
+    @Volatile private var interruptionRequested = false
 
     override fun onCreate() {
         super.onCreate()
@@ -30,6 +31,7 @@ class ProcessExecutionProbeService : Service() {
         }
         if (worker?.isAlive == true) return START_NOT_STICKY
         cancelled.set(false)
+        interruptionRequested = false
         persist(STATE_RUNNING, "Starting fixed Android child-process probe…", null)
         val notification = buildNotification("Launching harmless system process")
         if (Build.VERSION.SDK_INT >= 34) {
@@ -49,7 +51,9 @@ class ProcessExecutionProbeService : Service() {
             val wait = startFixedSleep()
             val exit = wait.waitFor()
             child = null
-            if (cancelled.get()) {
+            if (interruptionRequested) {
+                persist(STATE_INTERRUPTED, "Android stopped the process probe.", null)
+            } else if (cancelled.get()) {
                 persist(STATE_CANCELLED, identity.output, exit)
             } else if (exit == 0) {
                 persist(STATE_SUCCEEDED, identity.output + "\nForeground process survived the 30-second wait.", exit)
@@ -57,7 +61,8 @@ class ProcessExecutionProbeService : Service() {
                 persist(STATE_FAILED, identity.output + "\nSleep process exited with " + exit, exit)
             }
         } catch (error: Throwable) {
-            if (cancelled.get()) persist(STATE_CANCELLED, error.message ?: "Cancelled", null)
+            if (interruptionRequested) persist(STATE_INTERRUPTED, "Android stopped the process probe.", null)
+            else if (cancelled.get()) persist(STATE_CANCELLED, error.message ?: "Cancelled", null)
             else persist(STATE_FAILED, error.message ?: error.javaClass.simpleName, null)
         } finally {
             child?.destroy()
@@ -82,6 +87,7 @@ class ProcessExecutionProbeService : Service() {
     private fun startFixedSleep(): Process {
         val process = ProcessBuilder("/system/bin/sleep", "30").redirectErrorStream(true).start()
         child = process
+        if (cancelled.get() || interruptionRequested) process.destroyForcibly()
         return process
     }
 
@@ -133,7 +139,9 @@ class ProcessExecutionProbeService : Service() {
 
     override fun onDestroy() {
         if (getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_STATE, "") == STATE_RUNNING) {
-            child?.destroy()
+            interruptionRequested = true
+            cancelled.set(true)
+            child?.destroyForcibly()
             persist(STATE_INTERRUPTED, "Android stopped the probe before it completed.", null)
         }
         isActive = false
