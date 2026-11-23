@@ -220,8 +220,8 @@ for contract in ("class ProcessExecutionProbeService", 'check(path == "/system/b
     assert contract in probe_source, f"Process probe safety/lifecycle contract missing: {contract}"
 for forbidden in ("intent.getStringExtra", "ProcessBuilder(\"/system/bin/sh\"", "Runtime.getRuntime().exec"):
     assert forbidden not in probe_source, f"Process probe must not accept or invoke arbitrary commands: {forbidden}"
-for contract in ("ANDROID PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
-    assert contract in app, f"Preview Factory process probe UI missing: {contract}"
+for contract in ("if (BuildConfig.DEBUG)", "ANDROID PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
+    assert contract in app, f"Preview-only Factory process probe UI missing: {contract}"
 assert r"\${" not in app, "Kotlin interpolation is accidentally escaped"
 assert r"\\n" not in app, "Kotlin dialog newlines are double-escaped"
 
