@@ -283,7 +283,7 @@ class MainActivity : Activity() {
             addView(label(nativeStatus, 12f, if (nativeStatus.startsWith("Native bridge responding")) mint else Color.rgb(255, 190, 105), true))
         })
         page.addView(space(18))
-        if (BuildConfig.DEBUG) {
+        if (packageName.endsWith(".preview")) {
             val probePrefs = getSharedPreferences(ProcessExecutionProbeService.PREFS, MODE_PRIVATE)
             var probeState = probePrefs.getString(ProcessExecutionProbeService.KEY_STATE, ProcessExecutionProbeService.STATE_IDLE) ?: ProcessExecutionProbeService.STATE_IDLE
             if (probeState == ProcessExecutionProbeService.STATE_RUNNING && !ProcessExecutionProbeService.isActive) {
