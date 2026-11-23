@@ -227,7 +227,7 @@ for forbidden in ("intent.getStringExtra", "ProcessBuilder(\"/system/bin/sh\"", 
     assert forbidden not in probe_source, f"Process probe must not accept or invoke arbitrary commands: {forbidden}"
 for contract in ("POCKETFORGE_ART_RUNTIME_OK", "java.vm.name=", "java.vm.version=", "public static void main"):
     assert contract in runtime_probe_source, f"ART runtime probe missing output contract: {contract}"
-for contract in ('if (packageName.endsWith(".preview"))', "ANDROID PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
+for contract in ('if (packageName.endsWith(".preview"))', "ANDROID ART + PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
     assert contract in app, f"Preview-only Factory process probe UI missing: {contract}"
 assert "POST_NOTIFICATIONS" in debug_manifest, "Preview process probe must request notification permission"
 for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
