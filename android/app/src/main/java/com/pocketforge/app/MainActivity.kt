@@ -293,12 +293,12 @@ class MainActivity : Activity() {
                     .commit()
             }
             page.addView(card {
-                addView(label("ANDROID PROCESS FEASIBILITY · PREVIEW ONLY", 11f, accent, true))
+                addView(label("ANDROID ART + PROCESS FEASIBILITY · PREVIEW ONLY", 11f, accent, true))
                 addView(space(7))
                 addView(label("State: " + probeState, 14f, if (probeState == ProcessExecutionProbeService.STATE_SUCCEEDED) mint else ink, true))
                 addView(space(5))
                 addView(label(
-                    "Runs only /system/bin/id and /system/bin/sleep for 30 seconds. It does not execute project scripts, Gradle, or arbitrary shell commands.",
+                    "Starts a fixed Android ART child runtime from this APK, then /system/bin/id and /system/bin/sleep for 30 seconds. This is not a standalone JDK and does not run Gradle or project scripts.",
                     12f, muted
                 ))
                 val output = probePrefs.getString(ProcessExecutionProbeService.KEY_OUTPUT, "").orEmpty()
