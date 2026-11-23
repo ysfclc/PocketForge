@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SDK_ROOT="\${ANDROID_SDK_ROOT:-\${ANDROID_HOME:?ANDROID_SDK_ROOT or ANDROID_HOME is required}}"
+SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:?ANDROID_SDK_ROOT or ANDROID_HOME is required}}"
 SDKMANAGER="$(command -v sdkmanager || printf '%s' "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager")"
 AVDMANAGER="$(command -v avdmanager || printf '%s' "$SDK_ROOT/cmdline-tools/latest/bin/avdmanager")"
 EMULATOR="$SDK_ROOT/emulator/emulator"
 AVD_NAME="pocketforge-art-probe-api35"
 IMAGE="system-images;android-35;google_apis;x86_64"
-LOG_FILE="\${RUNNER_TEMP:-/tmp}/pocketforge-emulator.log"
+LOG_FILE="${RUNNER_TEMP:-/tmp}/pocketforge-emulator.log"
 
 "$SDKMANAGER" --install "emulator" "$IMAGE"
 printf 'no\n' | "$AVDMANAGER" create avd --force --name "$AVD_NAME" --package "$IMAGE" --device pixel_2
