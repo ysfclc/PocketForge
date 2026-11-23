@@ -207,6 +207,9 @@ assert "android.permission.INTERNET" in manifest, "GitHub API requires INTERNET 
 debug_manifest_path = Path("android/app/src/debug/AndroidManifest.xml")
 probe_path = Path("android/app/src/main/java/com/pocketforge/app/ProcessExecutionProbeService.kt")
 assert debug_manifest_path.is_file() and probe_path.is_file(), "Missing Android process probe"
+runtime_probe_path = Path("android/app/src/main/java/com/pocketforge/app/RuntimeProcessProbe.java")
+assert runtime_probe_path.is_file(), "Missing fixed Android ART child-runtime entry point"
+runtime_probe_source = runtime_probe_path.read_text()
 debug_manifest = debug_manifest_path.read_text()
 probe_source = probe_path.read_text()
 assert "ProcessExecutionProbeService" not in manifest, "Process probe must not be declared in the release manifest"
@@ -215,11 +218,15 @@ for contract in ("FOREGROUND_SERVICE_SPECIAL_USE", 'android:foregroundServiceTyp
     assert contract in debug_manifest, f"Preview process probe manifest missing: {contract}"
 for contract in ("class ProcessExecutionProbeService", 'check(path == "/system/bin/id")',
                  'ProcessBuilder(path)', 'ProcessBuilder("/system/bin/sleep", "30")',
-                 "startForeground", "ACTION_CANCEL", "STATE_INTERRUPTED",
+                 '"/system/bin/app_process"', '"com.pocketforge.app.RuntimeProcessProbe"',
+                 'it.environment()["CLASSPATH"] = applicationInfo.sourceDir',
+                 "runArtRuntimeProbe()", "TimeUnit.SECONDS", "startForeground", "ACTION_CANCEL", "STATE_INTERRUPTED",
                  "output.take(4096)", "FOREGROUND_SERVICE_TYPE_SPECIAL_USE"):
     assert contract in probe_source, f"Process probe safety/lifecycle contract missing: {contract}"
 for forbidden in ("intent.getStringExtra", "ProcessBuilder(\"/system/bin/sh\"", "Runtime.getRuntime().exec"):
     assert forbidden not in probe_source, f"Process probe must not accept or invoke arbitrary commands: {forbidden}"
+for contract in ("POCKETFORGE_ART_RUNTIME_OK", "java.vm.name=", "java.vm.version=", "public static void main"):
+    assert contract in runtime_probe_source, f"ART runtime probe missing output contract: {contract}"
 for contract in ('if (packageName.endsWith(".preview"))', "ANDROID PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
     assert contract in app, f"Preview-only Factory process probe UI missing: {contract}"
 assert "POST_NOTIFICATIONS" in debug_manifest, "Preview process probe must request notification permission"
