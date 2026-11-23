@@ -133,10 +133,6 @@ jobs:
           echo "::error::Gradle APK assembly failed after 3 attempts."
           exit 1
 
-      - name: Remove Preview signing material
-        if: always()
-        run: rm -f "$RUNNER_TEMP/pocketforge-preview-debug.p12"
-
       - name: Verify Preview APK signature and package metadata
         run: |
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
@@ -145,6 +141,14 @@ jobs:
           BADGING="$("$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK")"
           printf '%s\n' "$BADGING" | grep -F "package: name='com.pocketforge.app.preview'"
           printf '%s\n' "$BADGING" | grep -E "^sdkVersion:|^targetSdkVersion:"
+
+      - name: Run ART runtime and process supervision tests on Android emulator
+        if: github.event_name == 'pull_request'
+        run: bash ./scripts/test-android-probe-emulator.sh
+
+      - name: Remove Preview signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/pocketforge-preview-debug.p12"
 
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75
