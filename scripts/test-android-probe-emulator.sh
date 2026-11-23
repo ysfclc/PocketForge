@@ -9,6 +9,7 @@ AVD_NAME="pocketforge-art-probe-api35"
 IMAGE="system-images;android-35;google_apis;x86_64"
 LOG_FILE="${RUNNER_TEMP:-/tmp}/pocketforge-emulator.log"
 
+yes | "$SDKMANAGER" --licenses >/dev/null
 "$SDKMANAGER" --install "emulator" "$IMAGE"
 printf 'no\n' | "$AVDMANAGER" create avd --force --name "$AVD_NAME" --package "$IMAGE" --device pixel_2
 
