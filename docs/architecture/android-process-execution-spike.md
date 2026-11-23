@@ -36,9 +36,9 @@ Record device model, Android version, outcome for each step, and any notificatio
 
 ## What a pass proves
 
-A pass proves only that these fixed Android system binaries can be spawned and supervised by a user-visible Preview foreground service on that device, with basic persisted state and cancellation.
+A pass proves only that a child ART runtime can load the app's Java entry point from the APK, and that the fixed Android system binaries can be spawned and supervised by a user-visible Preview foreground service on that device, with basic persisted state and cancellation.
 
-It does not prove process-tree cancellation for Gradle, background survival under all OEM battery policies, Java runtime compatibility, writable-directory executable permissions, toolchain provisioning, SDK/NDK availability, memory/thermal feasibility, build output correctness, or artifact signing.
+It does not prove a standalone OpenJDK/JDK exists or can be provisioned, Gradle compatibility, process-tree cancellation for Gradle, background survival under all OEM battery policies, writable-directory executable permissions, toolchain provisioning, SDK/NDK availability, memory/thermal feasibility, build output correctness, or artifact signing.
 
 ## Next gate after a device pass
 
