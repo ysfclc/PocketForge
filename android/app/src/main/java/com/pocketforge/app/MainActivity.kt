@@ -260,38 +260,41 @@ class MainActivity : Activity() {
             addView(label(nativeStatus, 12f, if (nativeStatus.startsWith("Native bridge responding")) mint else Color.rgb(255, 190, 105), true))
         })
         page.addView(space(18))
-        val probePrefs = getSharedPreferences(ProcessExecutionProbeService.PREFS, MODE_PRIVATE)
-        var probeState = probePrefs.getString(ProcessExecutionProbeService.KEY_STATE, ProcessExecutionProbeService.STATE_IDLE) ?: ProcessExecutionProbeService.STATE_IDLE
-        if (probeState == ProcessExecutionProbeService.STATE_RUNNING && !ProcessExecutionProbeService.isActive) {
-            probeState = ProcessExecutionProbeService.STATE_INTERRUPTED
-            probePrefs.edit().putString(ProcessExecutionProbeService.KEY_STATE, probeState)
-                .putString(ProcessExecutionProbeService.KEY_OUTPUT, "The app process restarted while the probe was marked running.")
-                .commit()
-        }
-        page.addView(card {
-            addView(label("ANDROID PROCESS FEASIBILITY · PREVIEW ONLY", 11f, accent, true))
-            addView(space(7))
-            addView(label("State: " + probeState, 14f, if (probeState == ProcessExecutionProbeService.STATE_SUCCEEDED) mint else ink, true))
-            addView(space(5))
-            addView(label(
-                "Runs only /system/bin/id and /system/bin/sleep for 30 seconds. It does not execute project scripts, Gradle, or arbitrary shell commands.",
-                12f, muted
-            ))
-            val output = probePrefs.getString(ProcessExecutionProbeService.KEY_OUTPUT, "").orEmpty()
-            if (output.isNotBlank()) {
-                addView(space(7))
-                addView(label(output.take(500), 11f, muted))
+        if (BuildConfig.DEBUG) {
+            val probePrefs = getSharedPreferences(ProcessExecutionProbeService.PREFS, MODE_PRIVATE)
+            var probeState = probePrefs.getString(ProcessExecutionProbeService.KEY_STATE, ProcessExecutionProbeService.STATE_IDLE) ?: ProcessExecutionProbeService.STATE_IDLE
+            if (probeState == ProcessExecutionProbeService.STATE_RUNNING && !ProcessExecutionProbeService.isActive) {
+                probeState = ProcessExecutionProbeService.STATE_INTERRUPTED
+                probePrefs.edit().putString(ProcessExecutionProbeService.KEY_STATE, probeState)
+                    .putString(ProcessExecutionProbeService.KEY_OUTPUT, "The app process restarted while the probe was marked running.")
+                    .commit()
             }
-            addView(space(12))
-            addView(pillButton(if (probeState == ProcessExecutionProbeService.STATE_RUNNING) "Probe running…" else "Run process probe", true) {
-                if (probeState != ProcessExecutionProbeService.STATE_RUNNING) {
-                    val intent = Intent(this@MainActivity, ProcessExecutionProbeService::class.java)
-                    if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
-                    Toast.makeText(this@MainActivity, "Process probe started", Toast.LENGTH_SHORT).show()
+            page.addView(card {
+                addView(label("ANDROID PROCESS FEASIBILITY · PREVIEW ONLY", 11f, accent, true))
+                addView(space(7))
+                addView(label("State: " + probeState, 14f, if (probeState == ProcessExecutionProbeService.STATE_SUCCEEDED) mint else ink, true))
+                addView(space(5))
+                addView(label(
+                    "Runs only /system/bin/id and /system/bin/sleep for 30 seconds. It does not execute project scripts, Gradle, or arbitrary shell commands.",
+                    12f, muted
+                ))
+                val output = probePrefs.getString(ProcessExecutionProbeService.KEY_OUTPUT, "").orEmpty()
+                if (output.isNotBlank()) {
+                    addView(space(7))
+                    addView(label(output.take(500), 11f, muted))
                 }
+                addView(space(12))
+                addView(pillButton(if (probeState == ProcessExecutionProbeService.STATE_RUNNING) "Probe running…" else "Run process probe", true) {
+                    if (probeState != ProcessExecutionProbeService.STATE_RUNNING) {
+                        val intent = Intent(this@MainActivity, ProcessExecutionProbeService::class.java)
+                        if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
+                        Toast.makeText(this@MainActivity, "Process probe started", Toast.LENGTH_SHORT).show()
+                    }
+                })
             })
-        })
-        page.addView(space(18))
+            page.addView(space(18))
+    
+        }
         page.addView(sectionTitle("PIPELINE CHECKLIST", "Only verified capabilities are marked complete"))
         page.addView(space(10))
         listStep(
