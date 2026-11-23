@@ -14,7 +14,8 @@ yes | "$SDKMANAGER" --licenses >/dev/null || true
 printf 'no\n' | "$AVDMANAGER" create avd --force --name "$AVD_NAME" --package "$IMAGE" --device pixel_2
 
 "$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data \
-  -gpu swiftshader -accel auto -memory 2048 -cores 2 > "$LOG_FILE" 2>&1 &
+  -gpu swiftshader -accel auto -memory 2048 -cores 2 -no-metrics -no-snapshot-load -no-snapshot-save \
+  -camera-back none > "$LOG_FILE" 2>&1 &
 EMULATOR_PID=$!
 cleanup() {
   adb emu kill >/dev/null 2>&1 || true
@@ -23,7 +24,12 @@ cleanup() {
 trap cleanup EXIT
 
 export ANDROID_SERIAL=emulator-5554
-timeout 120 adb wait-for-device
+if ! timeout 240 adb wait-for-device; then
+  cat "$LOG_FILE" || true
+  ps -ef | grep -E "[e]mulator|[q]emu" || true
+  echo "Android emulator did not become visible to adb."
+  exit 1
+fi
 BOOTED=false
 for attempt in $(seq 1 180); do
   if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
