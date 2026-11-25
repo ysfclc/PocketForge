@@ -176,6 +176,7 @@ jobs:
           path: .
           format: cyclonedx-json
           output-file: pocketforge.cdx.json
+          upload-artifact: false
 
       - name: Attest APK build provenance
         if: steps.prepare_preview_signing.outputs.trusted == 'true'
