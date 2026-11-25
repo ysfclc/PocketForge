@@ -144,6 +144,25 @@ jobs:
           printf '%s\n' "$BADGING" | grep -F "package: name='com.pocketforge.app.preview'"
           printf '%s\n' "$BADGING" | grep -E "^sdkVersion:|^targetSdkVersion:"
 
+      - name: Enforce persistent Preview signing identity
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          EXPECTED_PREVIEW_CERT_SHA256: 9d89c5b33b9db756b60084228bb9589812c71fd5f7562e30a7d4ab3906d06d5f
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          ACTUAL_CERT_SHA256="$("$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | awk '/Signer #1 certificate SHA-256 digest:/ { print $NF; exit }' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          if [[ -z "$ACTUAL_CERT_SHA256" ]]; then
+            echo "::error::Could not read the Preview APK signer certificate fingerprint."
+            exit 1
+          fi
+          echo "Preview signer certificate SHA-256: $ACTUAL_CERT_SHA256"
+          if [[ "$ACTUAL_CERT_SHA256" != "$EXPECTED_PREVIEW_CERT_SHA256" ]]; then
+            echo "::error::Preview APK signer does not match the approved persistent key. Expected $EXPECTED_PREVIEW_CERT_SHA256; got $ACTUAL_CERT_SHA256. Refusing artifact publication."
+            exit 1
+          fi
+          echo "Persistent Preview signing identity verified."
+          
       - name: Run ART runtime and process supervision tests on Android emulator
         if: github.event_name == 'pull_request'
         run: bash ./scripts/test-android-probe-emulator.sh
