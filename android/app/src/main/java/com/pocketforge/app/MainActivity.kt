@@ -272,10 +272,10 @@ class MainActivity : Activity() {
         page.addView(sectionTitle("BUILD FACTORY", "A transparent path from source revision to APK"))
         page.addView(space(14))
         page.addView(card {
-            addView(label("PocketForge CI build · VERIFIED", 18f, mint, true))
+            addView(label("POCKETFORGE CI · VALIDATION GREEN", 18f, mint, true))
             addView(space(7))
             addView(label(
-                "The PocketForge app itself has a verified Android debug build. That proves this app can be packaged; it does not mean an imported project can be compiled on this phone yet.",
+                "Rust ABI builds, Kotlin compilation, APK signature/package checks and the hosted 10-test emulator suite pass. The current CI path uses a temporary signing key because persistent Preview secrets are not configured, so it does not publish an update-safe APK or provenance. Imported projects still cannot be built on this phone.",
                 13f,
                 muted
             ))
@@ -321,7 +321,7 @@ class MainActivity : Activity() {
         listStep(
             "01",
             "PocketForge Android package",
-            "Rust ABIs, Rust tests, Gradle APK, signature, SBOM and provenance passed in CI",
+            "Rust ABIs, Rust tests, Kotlin, APK checks and 10 emulator tests pass; persistent-signed APK/provenance publication remains blocked",
             true
         )
         listStep(
