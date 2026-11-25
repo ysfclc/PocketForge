@@ -225,3 +225,11 @@ The new connector source and static contract checks were committed to the featur
 - The Android emulator process tests and security scans from #374 remain valid CI test evidence for the source code, but the APK from that run is not an acceptable persistent-signed distribution artifact. Physical Redmi acceptance remains pending.
 
 - Added an explicit trusted-build certificate gate in pipeline commit `5247c31f586768fda40d84c5f02f62826335d73b`: after APK signature verification, trusted same-repository PR/push builds must match the approved certificate SHA-256 `9d89c5b33b9db756b60084228bb9589812c71fd5f7562e30a7d4ab3906d06d5f`. A mismatch fails the pipeline before attestation or artifact upload. Genuine fork PRs skip this trusted-key gate and cannot publish APK/provenance.
+
+
+## 2026-11-25 — CI/test and trusted-artifact gates separated
+
+- Trusted push pipeline run [#384](https://github.com/ysfclc/PocketForge/actions/runs/45687426894) confirmed the four `POCKETFORGE_DEBUG_*` repository secrets are currently empty/unavailable. Rust and Kotlin compilation had succeeded before the signing preparation step failed. This is a repository configuration gap, not an app compilation failure.
+- Workflow commit `e287cd15f2f67c8219b89d2815c11df98115ad79` changes missing-secret behavior: the job records `trusted=false`, continues with Android's runner-local debug signing identity for build and emulator validation, and skips persistent-certificate enforcement, APK provenance attestation and APK/SBOM publication. When all four secrets exist, it records `trusted=true`, decodes the private PKCS12 key, and requires the exact approved certificate fingerprint before any artifact publication.
+- This keeps CI test evidence flowing without representing an ephemeral-key APK as an update-safe deliverable. The old run #374 artifact remains untrusted. Persistent Preview signing remains blocked until repository secrets are configured from the private bundle and the strict fingerprint check passes.
+- New pipeline validation is running on this commit; do not mark the workflow fix accepted until the CI and security jobs finish. Physical Redmi acceptance remains pending.
