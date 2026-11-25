@@ -95,10 +95,12 @@ jobs:
           PREVIEW_STORE_PASSWORD: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_PASSWORD }}
           PREVIEW_KEY_ALIAS: ${{ secrets.POCKETFORGE_DEBUG_KEY_ALIAS }}
           PREVIEW_KEY_PASSWORD: ${{ secrets.POCKETFORGE_DEBUG_KEY_PASSWORD }}
+          PREVIEW_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          PREVIEW_BASE_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [[ -z "${PREVIEW_KEYSTORE_BASE64:-}" || -z "${PREVIEW_STORE_PASSWORD:-}" || -z "${PREVIEW_KEY_ALIAS:-}" || -z "${PREVIEW_KEY_PASSWORD:-}" ]]; then
-            if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && "${GITHUB_HEAD_REPOSITORY:-}" != "${GITHUB_REPOSITORY:-}" ]]; then
+            if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && "${PREVIEW_HEAD_REPOSITORY:-}" != "${PREVIEW_BASE_REPOSITORY:-}" ]]; then
               echo "::notice::Fork PR: private Preview signing secrets are unavailable; using the runner's temporary debug key. Do not use this artifact for in-place updates."
               exit 0
             fi
@@ -158,11 +160,13 @@ jobs:
           output-file: pocketforge.cdx.json
 
       - name: Attest APK build provenance
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
         with:
           subject-path: android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload debug APK and SBOM
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pocketforge-preview-${{ github.sha }}
