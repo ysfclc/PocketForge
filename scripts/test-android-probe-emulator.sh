@@ -32,10 +32,16 @@ echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' |
   sudo tee /etc/udev/rules.d/99-kvm4all.rules >/dev/null
 sudo udevadm control --reload-rules
 sudo udevadm trigger --name-match=kvm
-if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then
+# udevadm trigger does not guarantee that an already-created device node is
+# recreated with the new mode. Enforce the documented permissions directly on
+# this disposable hosted runner, then verify acceleration by opening KVM via
+# the emulator's own diagnostic (the authoritative check).
+sudo chmod 0666 /dev/kvm
+KVM_MODE="$(stat -c '%a' /dev/kvm)"
+if [[ "$KVM_MODE" != "666" ]]; then
   ls -l /dev/kvm || true
   id
-  echo "The runner still cannot read and write /dev/kvm after applying the hosted-runner rule."
+  echo "Expected /dev/kvm mode 666 after chmod; observed $KVM_MODE."
   exit 1
 fi
 ACCEL_CHECK="$("$EMULATOR" -accel-check 2>&1)"
