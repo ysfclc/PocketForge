@@ -13,7 +13,7 @@ LOG_FILE="${RUNNER_TEMP:-/tmp}/pocketforge-emulator.log"
 
 yes | "$SDKMANAGER" --licenses >/dev/null || true
 "$SDKMANAGER" --install "emulator" "$IMAGE"
-printf 'no\n' | "$AVDMANAGER" create avd --force --name "$AVD_NAME" --package "$IMAGE" --device pixel_2 --path "$ANDROID_AVD_HOME/$AVD_NAME.avd"
+printf 'no\\n' | "$AVDMANAGER" create avd --force --name "$AVD_NAME" --package "$IMAGE" --device pixel_2 --path "$ANDROID_AVD_HOME/$AVD_NAME.avd"
 "$AVDMANAGER" list avd
 if [[ ! -s "$ANDROID_AVD_HOME/$AVD_NAME.ini" ]]; then
   find "$ANDROID_AVD_HOME" -maxdepth 2 -type f -print || true
@@ -21,8 +21,32 @@ if [[ ! -s "$ANDROID_AVD_HOME/$AVD_NAME.ini" ]]; then
   exit 1
 fi
 
-"$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data \
-  -gpu swiftshader -accel auto -memory 2048 -cores 2 -no-metrics -no-snapshot-load -no-snapshot-save \
+# GitHub-hosted Linux runners expose /dev/kvm, but the runner user is not
+# necessarily a member of the kvm group. Apply GitHub's documented udev rule
+# on this disposable runner, then fail closed unless KVM is actually usable.
+if [[ ! -e /dev/kvm ]]; then
+  echo "KVM device /dev/kvm is missing; hardware-accelerated emulator tests cannot run."
+  exit 1
+fi
+echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' |
+  sudo tee /etc/udev/rules.d/99-kvm4all.rules >/dev/null
+sudo udevadm control --reload-rules
+sudo udevadm trigger --name-match=kvm
+if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then
+  ls -l /dev/kvm || true
+  id
+  echo "The runner still cannot read and write /dev/kvm after applying the hosted-runner rule."
+  exit 1
+fi
+ACCEL_CHECK="$("$EMULATOR" -accel-check 2>&1)"
+printf '%s\\n' "$ACCEL_CHECK"
+if ! grep -Eqi 'KVM.*installed and usable' <<<"$ACCEL_CHECK"; then
+  echo "Android Emulator did not confirm usable KVM acceleration."
+  exit 1
+fi
+
+"$EMULATOR" -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot -wipe-data \\
+  -gpu swiftshader -accel auto -memory 2048 -cores 2 -no-metrics -no-snapshot-load -no-snapshot-save \\
   -camera-back none > "$LOG_FILE" 2>&1 &
 EMULATOR_PID=$!
 cleanup() {
@@ -40,7 +64,7 @@ if ! timeout 240 adb wait-for-device; then
 fi
 BOOTED=false
 for attempt in $(seq 1 180); do
-  if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
+  if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\\r')" == "1" ]]; then
     BOOTED=true
     break
   fi
