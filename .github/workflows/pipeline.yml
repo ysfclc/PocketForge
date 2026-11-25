@@ -89,6 +89,7 @@ jobs:
           exit 1
 
       - name: Prepare persistent Preview signing key
+        id: prepare_preview_signing
         shell: bash
         env:
           PREVIEW_KEYSTORE_BASE64: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_BASE64 }}
@@ -100,18 +101,16 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${PREVIEW_KEYSTORE_BASE64:-}" || -z "${PREVIEW_STORE_PASSWORD:-}" || -z "${PREVIEW_KEY_ALIAS:-}" || -z "${PREVIEW_KEY_PASSWORD:-}" ]]; then
-            if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && "${PREVIEW_HEAD_REPOSITORY:-}" != "${PREVIEW_BASE_REPOSITORY:-}" ]]; then
-              echo "::notice::Fork PR: private Preview signing secrets are unavailable; using the runner's temporary debug key. Do not use this artifact for in-place updates."
-              exit 0
-            fi
-            echo "::error::Configure the four POCKETFORGE_DEBUG_* repository Actions secrets before building a trusted Preview APK."
-            exit 1
+            echo "trusted=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Persistent Preview signing secrets are unavailable. Continuing with the runner's temporary debug key for CI tests only; APK publication and provenance will be skipped."
+            exit 0
           fi
           umask 077
           printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/pocketforge-preview-debug.p12"
           test -s "$RUNNER_TEMP/pocketforge-preview-debug.p12"
           echo "ORG_GRADLE_PROJECT_previewStoreFile=$RUNNER_TEMP/pocketforge-preview-debug.p12" >> "$GITHUB_ENV"
           unset PREVIEW_KEYSTORE_BASE64
+          echo "trusted=true" >> "$GITHUB_OUTPUT"
 
       - name: Assemble Android Preview APK (retry transient repository throttling)
         working-directory: android
@@ -145,7 +144,7 @@ jobs:
           printf '%s\n' "$BADGING" | grep -E "^sdkVersion:|^targetSdkVersion:"
 
       - name: Enforce persistent Preview signing identity
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        if: steps.prepare_preview_signing.outputs.trusted == 'true'
         env:
           EXPECTED_PREVIEW_CERT_SHA256: 9d89c5b33b9db756b60084228bb9589812c71fd5f7562e30a7d4ab3906d06d5f
         run: |
@@ -179,13 +178,13 @@ jobs:
           output-file: pocketforge.cdx.json
 
       - name: Attest APK build provenance
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        if: steps.prepare_preview_signing.outputs.trusted == 'true'
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
         with:
           subject-path: android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload debug APK and SBOM
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        if: steps.prepare_preview_signing.outputs.trusted == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pocketforge-preview-${{ github.sha }}
