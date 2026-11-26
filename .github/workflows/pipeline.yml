@@ -172,7 +172,6 @@ jobs:
           echo "Persistent Preview signing identity verified."
           
       - name: Run ART runtime and process supervision tests on Android emulator
-        if: github.event_name == 'pull_request'
         run: bash ./scripts/test-android-probe-emulator.sh
 
       - name: Remove Preview signing material
