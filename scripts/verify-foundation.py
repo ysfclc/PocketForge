@@ -267,7 +267,8 @@ for contract in (
     "scripts/verify-foundation.sh", "scripts/build-rust.sh",
     "cargo +1.82.0 test", ":app:compileDebugKotlin", "assembleDebug", "apksigner", "retry transient repository throttling", "for attempt in 1 2 3",
     "POCKETFORGE_DEBUG_KEYSTORE_BASE64", "POCKETFORGE_DEBUG_KEYSTORE_PASSWORD",
-    "POCKETFORGE_DEBUG_KEY_ALIAS", "POCKETFORGE_DEBUG_KEY_PASSWORD",
+    "keytool", "must contain exactly one PrivateKeyEntry",
+    "ORG_GRADLE_PROJECT_previewKeyAlias", "ORG_GRADLE_PROJECT_previewKeyPassword",
     "Remove Preview signing material", "Prepare persistent Preview signing key",
     "sbom-action", "attest-build-provenance", "upload-artifact",
 ):
