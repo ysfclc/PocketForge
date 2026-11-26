@@ -114,9 +114,11 @@ jobs:
             exit 1
           fi
           KEY_ALIAS="$KEY_ENTRIES"
-          echo "ORG_GRADLE_PROJECT_previewStoreFile=$RUNNER_TEMP/pocketforge-preview-debug.p12" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_previewKeyAlias=$KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_previewKeyPassword=$PREVIEW_STORE_PASSWORD" >> "$GITHUB_ENV"
+          {
+            echo "ORG_GRADLE_PROJECT_previewStoreFile=$RUNNER_TEMP/pocketforge-preview-debug.p12"
+            echo "ORG_GRADLE_PROJECT_previewKeyAlias=$KEY_ALIAS"
+            echo "ORG_GRADLE_PROJECT_previewKeyPassword=$PREVIEW_STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
           unset PREVIEW_KEYSTORE_BASE64
           unset PREVIEW_STORE_PASSWORD
           echo "trusted=true" >> "$GITHUB_OUTPUT"
