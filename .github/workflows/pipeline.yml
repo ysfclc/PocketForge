@@ -94,13 +94,11 @@ jobs:
         env:
           PREVIEW_KEYSTORE_BASE64: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_BASE64 }}
           PREVIEW_STORE_PASSWORD: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_PASSWORD }}
-          PREVIEW_KEY_ALIAS: ${{ secrets.POCKETFORGE_DEBUG_KEY_ALIAS }}
-          PREVIEW_KEY_PASSWORD: ${{ secrets.POCKETFORGE_DEBUG_KEY_PASSWORD }}
           PREVIEW_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           PREVIEW_BASE_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if [[ -z "${PREVIEW_KEYSTORE_BASE64:-}" || -z "${PREVIEW_STORE_PASSWORD:-}" || -z "${PREVIEW_KEY_ALIAS:-}" || -z "${PREVIEW_KEY_PASSWORD:-}" ]]; then
+          if [[ -z "${PREVIEW_KEYSTORE_BASE64:-}" || -z "${PREVIEW_STORE_PASSWORD:-}" ]]; then
             echo "trusted=false" >> "$GITHUB_OUTPUT"
             echo "::warning::Persistent Preview signing secrets are unavailable. Continuing with the runner's temporary debug key for CI tests only; APK publication and provenance will be skipped."
             exit 0
@@ -108,16 +106,25 @@ jobs:
           umask 077
           printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/pocketforge-preview-debug.p12"
           test -s "$RUNNER_TEMP/pocketforge-preview-debug.p12"
+          KEYTOOL="$JAVA_HOME/bin/keytool"
+          KEY_ENTRIES="$("$KEYTOOL" -list -keystore "$RUNNER_TEMP/pocketforge-preview-debug.p12" -storetype PKCS12 -storepass "$PREVIEW_STORE_PASSWORD" 2>/dev/null | awk -F, '/PrivateKeyEntry/ { gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1); print $1 }')"
+          KEY_ENTRY_COUNT="$(printf '%s\\n' "$KEY_ENTRIES" | awk 'NF { count++ } END { print count+0 }')"
+          if [[ "$KEY_ENTRY_COUNT" -ne 1 ]]; then
+            echo "::error::Preview keystore must contain exactly one PrivateKeyEntry; refusing to guess the signing alias."
+            exit 1
+          fi
+          KEY_ALIAS="$KEY_ENTRIES"
           echo "ORG_GRADLE_PROJECT_previewStoreFile=$RUNNER_TEMP/pocketforge-preview-debug.p12" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_previewKeyAlias=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_previewKeyPassword=$PREVIEW_STORE_PASSWORD" >> "$GITHUB_ENV"
           unset PREVIEW_KEYSTORE_BASE64
+          unset PREVIEW_STORE_PASSWORD
           echo "trusted=true" >> "$GITHUB_OUTPUT"
 
       - name: Assemble Android Preview APK (retry transient repository throttling)
         working-directory: android
         env:
           ORG_GRADLE_PROJECT_previewStorePassword: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_PASSWORD }}
-          ORG_GRADLE_PROJECT_previewKeyAlias: ${{ secrets.POCKETFORGE_DEBUG_KEY_ALIAS }}
-          ORG_GRADLE_PROJECT_previewKeyPassword: ${{ secrets.POCKETFORGE_DEBUG_KEY_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
