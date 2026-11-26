@@ -252,7 +252,7 @@ for contract in ("system-images;android-35;google_apis;x86_64", "create avd",
     assert contract in emulator_script, f"Android emulator test runner missing: {contract}"
 pipeline = Path(".github/workflows/pipeline.yml").read_text()
 assert "Run ART runtime and process supervision tests on Android emulator" in pipeline
-assert "if: github.event_name == 'pull_request'" in pipeline
+assert "      - name: Run ART runtime and process supervision tests on Android emulator\n        run: bash ./scripts/test-android-probe-emulator.sh" in pipeline, "Android runtime tests must run unconditionally on every pipeline build"
 for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
     assert contract in app, f"Process probe notification permission flow missing: {contract}"
 for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
