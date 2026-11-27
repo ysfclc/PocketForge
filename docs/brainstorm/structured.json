@@ -34,5 +34,39 @@
     "willingness to pay",
     "local model coding quality"
   ],
-  "archive_status": "Distilled from available context, not verbatim"
+  "archive_status": "Original brainstorm transcript was not fully supplied; this archive combines confirmed repository decisions with a clearly labelled summary recovered from prior conversation context, not verbatim dialogue.",
+  "conversation_derived_clarifications": [
+    "One natural-language development objective drives one shared durable mission engine; no keyword-selected or per-example workflows.",
+    "Local and frontier models are intelligence providers; project, GitHub, build, test, diagnostic, signing and artifact operations are separately callable scoped capabilities.",
+    "Every mission must observe actual tool output, verify postconditions, expose evidence, replan when needed and recover durable state after interruption.",
+    "Local Android project folders and GitHub repositories are equal first-class project sources using the same mission lifecycle.",
+    "Local builds must remain on-device and independent of GitHub Actions; no silent cloud fallback.",
+    "Imported projects must be snapshotted and verified before execution; build scripts are untrusted and require explicit user approval.",
+    "GitHub writes require scoped grants, immutable base revisions, reviewed diffs and explicit approvals.",
+    "Signing credentials are never available to agents; temporary CI keys must never be represented as update-safe APK signing identities.",
+    "Memo remains a separate automation connector, not a merged product.",
+    "PocketForge is a specialized native Android development factory, not an unrestricted general assistant or Android Studio clone."
+  ],
+  "acceptance_baseline_2026_11_27": {
+    "main_commit": "6430c692e1cc4f9ef738932d4d9e8e422ed0f118",
+    "android_pipeline": "https://github.com/ysfclc/PocketForge/actions/runs/46040490517",
+    "security_pipeline": "https://github.com/ysfclc/PocketForge/actions/runs/46040490570",
+    "ci": "passed",
+    "emulator_instrumentation": {
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    "persistent_preview_signing": "blocked: repository secrets unavailable",
+    "trusted_apk_artifact": "not published",
+    "provenance_attestation": "skipped",
+    "physical_device_acceptance": "pending",
+    "imported_project_build_executor": "not implemented",
+    "durable_mission_engine": "architecture specified; implementation pending"
+  },
+  "branch_policy": {
+    "canonical_branch": "main",
+    "current_branch_count": 1,
+    "policy": "Use short-lived focused branches for active milestones; merge reviewed coherent work to main, then delete merged/stale branches. Keep only genuinely active work branches."
+  }
 }
