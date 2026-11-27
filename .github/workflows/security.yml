@@ -3,7 +3,7 @@ name: Supply chain security
 on:
   pull_request:
   push:
-    branches: [main, governance/mission-execution-invariants-2026-11-20]
+    branches: [main]
 
 permissions:
   contents: read

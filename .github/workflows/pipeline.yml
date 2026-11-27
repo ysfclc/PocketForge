@@ -3,7 +3,7 @@ name: PocketForge CI pipeline
 on:
   pull_request:
   push:
-    branches: [main, governance/mission-execution-invariants-2026-11-20]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
