@@ -8,7 +8,7 @@ required = [
     "CODEOWNERS", "docs/product/vision.md", "docs/product/personas.md",
     "docs/product/scope.md", "docs/product/roadmap.md",
     "docs/architecture/overview.md", "docs/architecture/data-model.md",
-    "docs/architecture/ffi-contract.md", "core/Cargo.toml",
+    "docs/architecture/ffi-contract.md", "docs/architecture/local-build-execution.md", "core/Cargo.toml",
     "android/app/build.gradle.kts", "ios/README.md",
     ".github/workflows/pipeline.yml", ".github/workflows/android.yml",
     ".github/workflows/security.yml",
@@ -37,14 +37,239 @@ for contract in (
 ):
     assert contract in store, f"Local workspace store missing contract: {contract}"
 assert "No product features included." not in app
+
+local_inspector_path = Path("android/app/src/main/java/com/pocketforge/app/LocalProjectInspector.kt")
+assert local_inspector_path.is_file(), "Missing SAF-scoped local project inspector"
+local_inspector = local_inspector_path.read_text()
+for contract in (
+    "persistedUriPermissions", "buildChildDocumentsUriUsingTree",
+    "buildDocumentUriUsingTree", "detectProjectType", "MAX_DIRECTORY_ENTRIES",
+):
+    assert contract in local_inspector, f"Local project inspector missing contract: {contract}"
+for contract in (
+    "persistedUriPermissions.any", "inspectLocalProject", "showLocalProjectOverview",
+    "browseLocalDirectory", "normalizeGitHubRepositoryInput", "runBackgroundTask",
+):
+    assert contract in app, f"Native project onboarding missing contract: {contract}"
+assert "runGitHubRequest" not in app, "Obsolete GitHub-only background task label remains"
+assert "pinnedRevisionOrReconnect" in app, "GitHub browsing must require a pinned commit"
+assert "initialRepository: String? = null" in app, "GitHub reconnect should prefill the repository"
+assert "project.githubRevision ?: project.githubDefaultBranch" not in app, "GitHub browsing must not fall back to a moving branch"
+assert "sizeColumn < 0" in local_inspector, "Local inspection must tolerate providers without an optional size column"
+
+build_preflight_path = Path("android/app/src/main/java/com/pocketforge/app/BuildPreflight.kt")
+assert build_preflight_path.is_file(), "Missing read-only imported-project build preflight"
+build_preflight = build_preflight_path.read_text()
+for contract in (
+    "persistedUriPermissions", "MAX_DEPTH", "MAX_ENTRIES", "MAX_TEXT_BYTES",
+    "gradle-wrapper.properties", "gradle-wrapper.jar", "com.android.application",
+    "AndroidManifest.xml", "cargo.toml", "distributionUrl", "candidateRoots", "relativeToBuildRoot", "buildRoot",
+    "never copies, edits, executes or uploads",
+):
+    assert contract in build_preflight, f"Build preflight missing safety/detection contract: {contract}"
+assert "ProcessBuilder" not in build_preflight and "Runtime.getRuntime" not in build_preflight, "Preflight must never execute imported project code"
+
+build_run_store_path = Path("android/app/src/main/java/com/pocketforge/app/BuildRunStore.kt")
+assert build_run_store_path.is_file(), "Missing persisted build-run lifecycle store"
+build_run_store = build_run_store_path.read_text()
+for contract in (
+    "data class BuildRun", "class BuildRunStore", "fun create(", "fun transition(",
+    "fun all()", "fun get(id: String)", "pocketforge.build-runs.v1",
+    "QUEUED", "PREPARING", "RUNNING", "CANCELLING", "SUCCEEDED",
+    "FAILED", "CANCELLED", "INTERRUPTED", "Illegal build transition",
+    "outputArtifacts", "logReference", "failureReason", "commit()",
+    "snapshotId", "manifestSha256", "sourceUriSha256", "sourceRootIdSha256", "sourceLastModified",
+    "snapshot: StoredProjectSnapshot?", "snapshot.projectId == projectId", "snapshot.sourceRootIdSha256.matches(hashPattern)",
+    "ProjectSnapshotVerifier(snapshotRoot).verify(", "expectedSourceUriSha256 = snapshot.sourceUriSha256",
+    "expectedSourceRootIdSha256 = snapshot.sourceRootIdSha256", "verification.valid",
+):
+    assert contract in build_run_store, f"Build-run persistence missing contract: {contract}"
+assert "ProcessBuilder" not in build_run_store and "Runtime.getRuntime" not in build_run_store, "Build-run store must not execute project code"
+
+snapshot_path = Path("android/app/src/main/java/com/pocketforge/app/ProjectSnapshotter.kt")
+assert snapshot_path.is_file(), "Missing bounded app-private project snapshot preparation"
+snapshot_source = snapshot_path.read_text()
+for contract in (
+    "class ProjectSnapshotter", "data class ProjectSnapshot", "data class SnapshotLimits",
+    "persistedUriPermissions", "filesDir", "build-workspaces", "renameTo(destination)",
+    "isCancelled", "onProgress", "maxEntries", "maxDepth", "maxTotalBytes", "maxFileBytes",
+    "EXCLUDED_DIRECTORIES", ".git", ".gradle", "node_modules", "canonicalFile.parentFile",
+    "SnapshotCancelledException", "output.fd.sync()",
+    "data class SourceIdentity", "treeUriSha256", "rootDocumentIdSha256",
+    "COLUMN_LAST_MODIFIED", "sourceIdentity", "sourceDisplayName",
+):
+    assert contract in snapshot_source, f"Project snapshot safety contract missing: {contract}"
+assert "ProcessBuilder" not in snapshot_source and "Runtime.getRuntime" not in snapshot_source, "Snapshot preparation must never execute project code"
+snapshot_verifier_path = Path("android/app/src/main/java/com/pocketforge/app/ProjectSnapshotVerifier.kt")
+assert snapshot_verifier_path.is_file(), "Missing project snapshot integrity verifier"
+snapshot_verifier = snapshot_verifier_path.read_text()
+for contract in (
+    "class ProjectSnapshotVerifier", "snapshotRoot.canonicalFile",
+    "expectedManifestSha256", "schemaVersion", "expectedSnapshotId",
+    "MessageDigest.getInstance(\"SHA-256\")", "isSafeRelativePath",
+    "Snapshot contains missing or unlisted files", "target.length() == expectedBytes",
+    "sourceIdentity", "treeUriSha256", "rootDocumentIdSha256",
+    "expectedSourceUriSha256", "expectedSourceRootIdSha256",
+):
+    assert contract in snapshot_verifier, f"Snapshot integrity verification contract missing: {contract}"
+assert "ProjectSnapshotVerifier(java.io.File(filesDir, \"build-workspaces\"))" in app, "Snapshot must be verified against the app-owned root"
+assert "if (!verification.valid)" in app and "prepared.directory.deleteRecursively()" in app, "Invalid snapshots must be removed before indexing"
+assert "Integrity: VERIFIED" in app, "Snapshot UI must report verified integrity"
+snapshot_store_path = Path("android/app/src/main/java/com/pocketforge/app/ProjectSnapshotStore.kt")
+assert snapshot_store_path.is_file(), "Missing persistent project snapshot index"
+snapshot_store = snapshot_store_path.read_text()
+for contract in (
+    "data class StoredProjectSnapshot", "class ProjectSnapshotStore", "fun all()",
+    "fun forProject(projectId: String)", "fun add(snapshot: ProjectSnapshot",
+    "fun remove(snapshotId: String)", "pocketforge.snapshots.v1",
+    "canonicalFile", "Refusing to delete a directory outside snapshot storage",
+    "sourceUriSha256", "sourceRootIdSha256", "sourceDisplayName", "sourceLastModified",
+):
+    assert contract in snapshot_store, f"Snapshot index contract missing: {contract}"
+assert "ProjectSnapshotStore(this).add(prepared, project.id, project.name)" in app, "Completed snapshots must be persisted to the local index"
+for contract in (
+    "manifestFile", "manifestSha256", "snapshot-manifest.json", "schemaVersion",
+    "FileRecord", 'MessageDigest.getInstance("SHA-256")', "progress.records.sortedBy { it.path }",
+):
+    assert contract in snapshot_source, f"Snapshot manifest/hash contract missing: {contract}"
+assert "Prepare snapshot" in app and "prepareProjectSnapshot(project)" in app, "Local project UI must expose snapshot preparation"
+for contract in ("Snapshot ready", "Manifest SHA-256", "Snapshot cancelled", "No build scripts have been executed"):
+    assert contract in app, f"Snapshot UI result missing safety/status contract: {contract}"
+
+# Build-root scoring must use actual Android manifest evidence, not treat the
+# empty repository root as Android merely because it is a candidate.
+preflight_source = build_preflight
+assert 'if (candidateRoot.isEmpty()) it.isNotBlank() else it == candidateRoot || it.startsWith("$candidateRoot/")' in preflight_source, "Kotlin manifest scoring must explicitly guard empty root"
+assert 'if (candidateRoot.isEmpty()) true else it == candidateRoot || it.startsWith("$candidateRoot/")' not in preflight_source, "Empty candidate root must not match every manifest"
+def preflight_root_score(candidate_root, manifest_paths, wrapper_roots, root_build_roots, settings_roots):
+    has_manifest = any(
+        (path.startswith(candidate_root + "/") or path == candidate_root)
+        if candidate_root else bool(path)
+        for path in manifest_paths
+    )
+    return (8 if has_manifest else 0) + (8 if candidate_root in wrapper_roots else 0) + (2 if candidate_root in root_build_roots else 0) + (1 if candidate_root in settings_roots else 0)
+
+assert preflight_root_score("", [], set(), {""}, {""}) == 3, "Empty root must not gain Android manifest score"
+assert preflight_root_score("android", ["android/app/src/main/AndroidManifest.xml"], set(), {"android"}, {"android"}) == 11, "Nested Android root must score its manifest and Gradle evidence"
+assert preflight_root_score("", ["app/src/main/AndroidManifest.xml"], {""}, {""}, {""}) == 19, "Root Android project must retain manifest evidence"
+for contract in ("BuildPreflight.assess", "showBuildAssessment", "Assess build", "structural assessment only", "Read-only preflight is available", "assessment.buildRoot"):
+    assert contract in app, f"Local build preflight UI missing contract: {contract}"
+
+github_client_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubRepositoryClient.kt")
+github_vault_path = Path("android/app/src/main/java/com/pocketforge/app/GitHubTokenVault.kt")
+assert github_client_path.is_file(), "Missing native GitHub repository adapter"
+assert github_vault_path.is_file(), "Missing encrypted GitHub token vault"
+github_client = github_client_path.read_text()
+github_vault = github_vault_path.read_text()
+for contract in (
+    "showConnectGitHubRepository", "browseGitHubPath", "showGitHubEditForm",
+    "buildReviewDiff", "createGitHubPullRequest",
+):
+    assert contract in app, f"Native GitHub workspace missing contract: {contract}"
+for contract in (
+    "fun getRepository(", "fun listContents(", "fun readTextFileWithSha(",
+    "fun createBranch(", "fun updateTextFile(", "fun createPullRequest(",
+    "currentSha != expectedBlobSha", "CodingErrorAction.REPORT",
+    "SHA_PATTERN.matches(sha)", "could not pin the default branch",
+):
+    assert contract in github_client, f"GitHub repository adapter missing contract: {contract}"
+for contract in (
+    "AndroidKeyStore", "AES/GCM/NoPadding", "SHA-256",
+    "preferenceKey(repository)", "fun clear(repository: String)",
+):
+    assert contract in github_vault, f"GitHub credential vault missing security contract: {contract}"
+for contract in ("SOURCE_GITHUB", "githubRepository", "githubDefaultBranch", "githubRevision"):
+    assert contract in store, f"Workspace source model missing GitHub field: {contract}"
+ffi_manifest = Path("core/pocketforge-ffi/Cargo.toml").read_text()
+core_manifest = Path("core/pocketforge-core/Cargo.toml").read_text()
+deny_policy = Path("core/deny.toml").read_text()
+assert "publish = false" in ffi_manifest and "publish = false" in core_manifest, "Proprietary workspace crates must remain unpublished"
+assert 'version = "0.1.0", path = "../pocketforge-core"' in ffi_manifest, "Internal path dependency must have an explicit version"
+assert "private = { ignore = true }" in deny_policy, "License checks must ignore only unpublished private workspace members"
+
+security_workflow = Path(".github/workflows/security.yml").read_text()
+assert "run: cargo audit" in security_workflow, "Use cargo-audit's supported command syntax"
+assert "cargo audit --locked" not in security_workflow, "cargo-audit does not accept Cargo's --locked flag"
+assert "dependency-review-action" not in security_workflow, "Do not invoke native Dependency Review until the repository dependency graph prerequisite is enabled"
+
+android_build = Path("android/app/build.gradle.kts").read_text()
+preview_manifest_path = Path("android/app/src/debug/AndroidManifest.xml")
+assert 'applicationIdSuffix = ".preview"' in android_build, "Preview must install alongside the earlier debug package"
+assert "previewStoreFile" in android_build and 'signingConfigs.getByName("preview")' in android_build, "Preview needs configurable persistent signing"
+assert 'storeType = "PKCS12"' in android_build, "Preview keystore format must be explicit"
+assert preview_manifest_path.is_file() and "PocketForge Preview" in preview_manifest_path.read_text(), "Preview app label must be distinguishable"
+gitignore = Path(".gitignore").read_text()
+assert "*.p12" in gitignore and "*.jks" in gitignore, "Private signing keystores must be ignored"
+manifest = Path("android/app/src/main/AndroidManifest.xml").read_text()
+assert "android.permission.INTERNET" in manifest, "GitHub API requires INTERNET permission"
+
+# Process execution feasibility remains a fixed-command Preview-only spike.
+debug_manifest_path = Path("android/app/src/debug/AndroidManifest.xml")
+probe_path = Path("android/app/src/main/java/com/pocketforge/app/ProcessExecutionProbeService.kt")
+assert debug_manifest_path.is_file() and probe_path.is_file(), "Missing Android process probe"
+runtime_probe_path = Path("android/app/src/main/java/com/pocketforge/app/RuntimeProcessProbe.java")
+assert runtime_probe_path.is_file(), "Missing fixed Android ART child-runtime entry point"
+runtime_probe_source = runtime_probe_path.read_text()
+debug_manifest = debug_manifest_path.read_text()
+probe_source = probe_path.read_text()
+assert "ProcessExecutionProbeService" not in manifest, "Process probe must not be declared in the release manifest"
+for contract in ("FOREGROUND_SERVICE_SPECIAL_USE", 'android:foregroundServiceType="specialUse"',
+                 "PROPERTY_SPECIAL_USE_FGS_SUBTYPE", "ProcessExecutionProbeService"):
+    assert contract in debug_manifest, f"Preview process probe manifest missing: {contract}"
+for contract in ("class ProcessExecutionProbeService", 'check(path == "/system/bin/id")',
+                 'ProcessBuilder(path)', 'ProcessBuilder("/system/bin/sleep", "30")',
+                 '"/system/bin/app_process"', '"com.pocketforge.app.RuntimeProcessProbe"',
+                 'it.environment()["CLASSPATH"] = applicationInfo.sourceDir',
+                 "runArtRuntimeProbe()", "TimeUnit.SECONDS", "startForeground", "ACTION_CANCEL", "STATE_INTERRUPTED",
+                 "output.take(4096)", "FOREGROUND_SERVICE_TYPE_SPECIAL_USE"):
+    assert contract in probe_source, f"Process probe safety/lifecycle contract missing: {contract}"
+for forbidden in ("intent.getStringExtra", "ProcessBuilder(\"/system/bin/sh\"", "Runtime.getRuntime().exec"):
+    assert forbidden not in probe_source, f"Process probe must not accept or invoke arbitrary commands: {forbidden}"
+for contract in ("POCKETFORGE_ART_RUNTIME_OK", "java.vm.name=", "java.vm.version=", "public static void main"):
+    assert contract in runtime_probe_source, f"ART runtime probe missing output contract: {contract}"
+for contract in ('if (packageName.endsWith(".preview"))', "ANDROID ART + PROCESS FEASIBILITY", "Run process probe", "ProcessExecutionProbeService.PREFS"):
+    assert contract in app, f"Preview-only Factory process probe UI missing: {contract}"
+assert "POST_NOTIFICATIONS" in debug_manifest, "Preview process probe must request notification permission"
+
+# Exercise the child ART process and service lifecycle on a real Android emulator in PR CI.
+android_build = Path("android/app/build.gradle.kts").read_text()
+instrumented_test_path = Path("android/app/src/androidTest/java/com/pocketforge/app/RuntimeProcessProbeInstrumentedTest.kt")
+assert instrumented_test_path.is_file(), "Missing Android process probe instrumentation tests"
+instrumented_test = instrumented_test_path.read_text()
+for contract in ("AndroidJUnit4", "startActivitySync", "startForegroundService",
+                 "POCKETFORGE_ART_RUNTIME_OK", "java.vm.name=", "java.vm.version=",
+                 "notificationActionCancelsTheChildProcess", "grantRuntimePermission"):
+    assert contract in instrumented_test, f"Android process probe instrumentation test missing: {contract}"
+for contract in ("testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"",
+                 'androidTestImplementation("androidx.test:runner:1.6.2")',
+                 'androidTestImplementation("androidx.test.ext:junit:1.2.1")'):
+    assert contract in android_build, f"Android instrumentation configuration missing: {contract}"
+emulator_script_path = Path("scripts/test-android-probe-emulator.sh")
+assert emulator_script_path.is_file(), "Missing Android emulator process probe runner"
+emulator_script = emulator_script_path.read_text()
+for contract in ("system-images;android-35;google_apis;x86_64", "create avd",
+                 '-avd "$AVD_NAME"', "adb wait-for-device", "connectedDebugAndroidTest"):
+    assert contract in emulator_script, f"Android emulator test runner missing: {contract}"
+pipeline = Path(".github/workflows/pipeline.yml").read_text()
+assert "Run ART runtime and process supervision tests on Android emulator" in pipeline
+assert "      - name: Run ART runtime and process supervision tests on Android emulator\n        run: bash ./scripts/test-android-probe-emulator.sh" in pipeline, "Android runtime tests must run unconditionally on every pipeline build"
+for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
+    assert contract in app, f"Process probe notification permission flow missing: {contract}"
+for contract in ("requestProbePermissionOrStart()", "onRequestPermissionsResult"):
+    assert contract in app, f"Process probe notification permission flow missing: {contract}"
+
 assert r"\${" not in app, "Kotlin interpolation is accidentally escaped"
 assert r"\\n" not in app, "Kotlin dialog newlines are double-escaped"
 
 pipeline = Path(".github/workflows/pipeline.yml").read_text()
 for contract in (
-    "pull_request:", "push:", "branches: [main]", "workflow_dispatch:",
+    "pull_request:", "push:", "branches: [main, governance/mission-execution-invariants-2026-11-20]", "workflow_dispatch:",
     "scripts/verify-foundation.sh", "scripts/build-rust.sh",
-    "cargo +1.82.0 test", "assembleDebug", "apksigner",
+    "cargo +1.82.0 test", ":app:compileDebugKotlin", "assembleDebug", "apksigner", "retry transient repository throttling", "for attempt in 1 2 3",
+    "POCKETFORGE_DEBUG_KEYSTORE_BASE64", "POCKETFORGE_DEBUG_KEYSTORE_PASSWORD",
+    "keytool", "must contain exactly one PrivateKeyEntry",
+    "ORG_GRADLE_PROJECT_previewKeyAlias", "ORG_GRADLE_PROJECT_previewKeyPassword",
+    "Remove Preview signing material", "Prepare persistent Preview signing key",
     "sbom-action", "attest-build-provenance", "upload-artifact",
 ):
     assert contract in pipeline, f"Direct CI pipeline missing contract: {contract}"
@@ -52,7 +277,7 @@ for forbidden in ("incoming/", "zip_path", "REPO_CREATE_TOKEN", "validate-phase-
     assert forbidden not in pipeline, f"Obsolete ZIP/provisioning contract found: {forbidden}"
 
 workflow_paths = sorted(Path(".github/workflows").glob("*.yml"))
-assert {p.name for p in workflow_paths} == {"pipeline.yml", "android.yml", "security.yml"}
+assert {p.name for p in workflow_paths} == {"pipeline.yml", "android.yml", "security.yml", "runner-diagnostic.yml"}
 for path in workflow_paths:
     content = path.read_text()
     for action in re.findall(r"^\s*uses:\s*([^\s]+)", content, re.M):

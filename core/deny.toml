@@ -1,12 +1,20 @@
 [advisories]
-vulnerability = "deny"
-notice = "warn"
+# cargo-deny 0.16+ denies security advisories by default. The removed
+# vulnerability/notice keys must not be reintroduced; specific exceptions
+# require a documented advisory ID in the ignore list.
+yanked = "warn"
+ignore = []
+
 [licenses]
+# Internal workspace crates remain proprietary and are not distributed.
+private = { ignore = true }
 confidence-threshold = 0.90
 allow = ["Apache-2.0", "MIT", "BSD-3-Clause", "ISC", "Unicode-3.0", "MPL-2.0"]
+
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"

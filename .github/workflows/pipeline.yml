@@ -3,7 +3,7 @@ name: PocketForge CI pipeline
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, governance/mission-execution-invariants-2026-11-20]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: pocketforge-ci-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   verify-and-build:
@@ -35,6 +35,8 @@ jobs:
 
       - name: Install Android SDK and NDK
         uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        with:
+          packages: platform-tools
 
       - name: Install required Android platform and NDK packages
         run: |
@@ -57,10 +59,10 @@ jobs:
             pocketforge-${{ runner.os }}-
 
       - name: Verify repository foundation and contracts
-        run: ./scripts/verify-foundation.sh
+        run: bash ./scripts/verify-foundation.sh
 
       - name: Compile Rust core for all supported Android ABIs
-        run: ./scripts/build-rust.sh
+        run: bash ./scripts/build-rust.sh
 
       - name: Run Rust tests and lint checks
         working-directory: core
@@ -68,16 +70,113 @@ jobs:
           cargo +1.82.0 test --workspace --locked
           cargo +1.82.0 clippy --workspace --all-targets --locked -- -D warnings
 
-      - name: Assemble Android debug APK
+      - name: Compile Android Kotlin sources (retry transient repository throttling)
         working-directory: android
-        run: gradle --no-daemon --stacktrace assembleDebug
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gradle --no-daemon --stacktrace :app:compileDebugKotlin; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              delay=$((attempt * 20))
+              echo "::warning::Gradle compile attempt $attempt failed; retrying after ${delay}s for transient dependency repository errors."
+              sleep "$delay"
+            fi
+          done
+          echo "::error::Gradle Kotlin compilation failed after 3 attempts."
+          exit 1
 
-      - name: Verify APK signature and package metadata
+      - name: Prepare persistent Preview signing key
+        id: prepare_preview_signing
+        shell: bash
+        env:
+          PREVIEW_KEYSTORE_BASE64: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_BASE64 }}
+          PREVIEW_STORE_PASSWORD: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_PASSWORD }}
+          PREVIEW_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          PREVIEW_BASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${PREVIEW_KEYSTORE_BASE64:-}" || -z "${PREVIEW_STORE_PASSWORD:-}" ]]; then
+            echo "trusted=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Persistent Preview signing secrets are unavailable. Continuing with the runner's temporary debug key for CI tests only; APK publication and provenance will be skipped."
+            exit 0
+          fi
+          umask 077
+          printf '%s' "$PREVIEW_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/pocketforge-preview-debug.p12"
+          test -s "$RUNNER_TEMP/pocketforge-preview-debug.p12"
+          KEYTOOL="$JAVA_HOME/bin/keytool"
+          KEY_ENTRIES="$("$KEYTOOL" -list -keystore "$RUNNER_TEMP/pocketforge-preview-debug.p12" -storetype PKCS12 -storepass "$PREVIEW_STORE_PASSWORD" 2>/dev/null | awk -F, '/PrivateKeyEntry/ { gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1); print $1 }')"
+          KEY_ENTRY_COUNT="$(printf '%s\\n' "$KEY_ENTRIES" | awk 'NF { count++ } END { print count+0 }')"
+          if [[ "$KEY_ENTRY_COUNT" -ne 1 ]]; then
+            echo "::error::Preview keystore must contain exactly one PrivateKeyEntry; refusing to guess the signing alias."
+            exit 1
+          fi
+          KEY_ALIAS="$KEY_ENTRIES"
+          {
+            echo "ORG_GRADLE_PROJECT_previewStoreFile=$RUNNER_TEMP/pocketforge-preview-debug.p12"
+            echo "ORG_GRADLE_PROJECT_previewKeyAlias=$KEY_ALIAS"
+            echo "ORG_GRADLE_PROJECT_previewKeyPassword=$PREVIEW_STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+          unset PREVIEW_KEYSTORE_BASE64
+          unset PREVIEW_STORE_PASSWORD
+          echo "trusted=true" >> "$GITHUB_OUTPUT"
+
+      - name: Assemble Android Preview APK (retry transient repository throttling)
+        working-directory: android
+        env:
+          ORG_GRADLE_PROJECT_previewStorePassword: ${{ secrets.POCKETFORGE_DEBUG_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if gradle --no-daemon --stacktrace assembleDebug; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              delay=$((attempt * 20))
+              echo "::warning::Gradle assembly attempt $attempt failed; retrying after ${delay}s for transient dependency repository errors."
+              sleep "$delay"
+            fi
+          done
+          echo "::error::Gradle APK assembly failed after 3 attempts."
+          exit 1
+
+      - name: Verify Preview APK signature and package metadata
         run: |
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose "$APK"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          BADGING="$("$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK")"
+          printf '%s\n' "$BADGING" | grep -F "package: name='com.pocketforge.app.preview'"
+          printf '%s\n' "$BADGING" | grep -E "^sdkVersion:|^targetSdkVersion:"
+
+      - name: Enforce persistent Preview signing identity
+        if: steps.prepare_preview_signing.outputs.trusted == 'true'
+        env:
+          EXPECTED_PREVIEW_CERT_SHA256: 9d89c5b33b9db756b60084228bb9589812c71fd5f7562e30a7d4ab3906d06d5f
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          ACTUAL_CERT_SHA256="$("$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK" | awk '/Signer #1 certificate SHA-256 digest:/ { print $NF; exit }' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          if [[ -z "$ACTUAL_CERT_SHA256" ]]; then
+            echo "::error::Could not read the Preview APK signer certificate fingerprint."
+            exit 1
+          fi
+          echo "Preview signer certificate SHA-256: $ACTUAL_CERT_SHA256"
+          if [[ "$ACTUAL_CERT_SHA256" != "$EXPECTED_PREVIEW_CERT_SHA256" ]]; then
+            echo "::error::Preview APK signer does not match the approved persistent key. Expected $EXPECTED_PREVIEW_CERT_SHA256; got $ACTUAL_CERT_SHA256. Refusing artifact publication."
+            exit 1
+          fi
+          echo "Persistent Preview signing identity verified."
+          
+      - name: Run ART runtime and process supervision tests on Android emulator
+        run: bash ./scripts/test-android-probe-emulator.sh
+
+      - name: Remove Preview signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/pocketforge-preview-debug.p12"
 
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75
@@ -85,16 +184,19 @@ jobs:
           path: .
           format: cyclonedx-json
           output-file: pocketforge.cdx.json
+          upload-artifact: false
 
       - name: Attest APK build provenance
+        if: steps.prepare_preview_signing.outputs.trusted == 'true'
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
         with:
           subject-path: android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload debug APK and SBOM
+        if: steps.prepare_preview_signing.outputs.trusted == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: pocketforge-debug-${{ github.sha }}
+          name: pocketforge-preview-${{ github.sha }}
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             pocketforge.cdx.json

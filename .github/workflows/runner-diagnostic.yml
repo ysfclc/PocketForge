@@ -1,0 +1,32 @@
+name: Hosted runner diagnostic
+
+on:
+  pull_request:
+  push:
+    branches: [governance/mission-execution-invariants-2026-11-20]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pocketforge-runner-diagnostic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runner-smoke:
+    name: Minimal Ubuntu 22.04 runner allocation check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Report runner allocation
+        run: |
+          set -euo pipefail
+          echo "Runner allocation succeeded."
+          echo "Runner OS: $RUNNER_OS"
+          echo "Runner name: $RUNNER_NAME"
+          echo "Image OS: ${ImageOS:-unknown}"
+          uname -a
+          df -h /
